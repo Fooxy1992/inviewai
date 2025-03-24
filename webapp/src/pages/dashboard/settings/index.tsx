@@ -51,6 +51,7 @@ import {
   FiGithub,
   FiLinkedin,
   FiTwitter,
+  FiDownload,
 } from 'react-icons/fi';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 

@@ -175,7 +175,7 @@ export default function Help() {
   ];
   
   // Submeter formulário de contato
-  const handleSubmitContactForm = (e) => {
+  const handleSubmitContactForm = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
     // Simulação de envio do formulário
