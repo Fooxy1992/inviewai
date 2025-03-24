@@ -59,17 +59,19 @@ const StatCard = ({ title, value, percentage, isIncrease, icon, description }: S
           <Box>
             <Text color={textColor} fontSize="sm" fontWeight="medium">{title}</Text>
             <Heading size="lg" mt={1}>{value}</Heading>
-            <HStack spacing={1} mt={2}>
-              <StatArrow type={isIncrease ? 'increase' : 'decrease'} />
-              <Text 
-                fontSize="sm" 
-                fontWeight="medium"
-                color={isIncrease ? 'green.500' : 'red.500'}
-              >
-                {percentage}
-              </Text>
-              <Text fontSize="sm" color={textColor}>{description}</Text>
-            </HStack>
+            <Stat mt={2} size="sm">
+              <StatHelpText>
+                <StatArrow type={isIncrease ? 'increase' : 'decrease'} />
+                <Text 
+                  display="inline"
+                  fontWeight="medium"
+                  color={isIncrease ? 'green.500' : 'red.500'}
+                >
+                  {percentage}
+                </Text>
+              </StatHelpText>
+            </Stat>
+            <Text fontSize="sm" color={textColor}>{description}</Text>
           </Box>
           <Flex 
             h={10} 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import {
   Avatar,
@@ -21,6 +21,7 @@ import {
   Input,
   InputGroup,
   InputRightElement,
+  Link,
   Select,
   Stack,
   Switch,
@@ -52,6 +53,7 @@ import {
   FiLinkedin,
   FiTwitter,
   FiDownload,
+  FiCpu,
 } from 'react-icons/fi';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 
@@ -72,6 +74,11 @@ export default function Settings() {
   const [linkedinUrl, setLinkedinUrl] = useState('https://linkedin.com/in/joaosilva');
   const [twitterUrl, setTwitterUrl] = useState('');
   
+  // Estados para API Keys
+  const [openaiApiKey, setOpenaiApiKey] = useState('');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [isSavingApiKey, setIsSavingApiKey] = useState(false);
+  
   // Estados para notificações
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [practiceReminders, setPracticeReminders] = useState(true);
@@ -88,6 +95,15 @@ export default function Settings() {
   
   const toast = useToast();
   const bgColor = useColorModeValue('gray.50', 'gray.900');
+  
+  // Carregar a chave da API do localStorage quando a página carregar
+  useEffect(() => {
+    // Recuperar a chave da API salva no localStorage
+    const savedApiKey = localStorage.getItem('openai_api_key');
+    if (savedApiKey) {
+      setOpenaiApiKey(savedApiKey);
+    }
+  }, []);
   
   // Função para salvar perfil
   const handleSaveProfile = () => {
@@ -144,6 +160,51 @@ export default function Settings() {
     });
   };
   
+  // Função para salvar a configuração da API
+  const handleSaveApiConfig = async () => {
+    try {
+      setIsSavingApiKey(true);
+      
+      // Em uma implementação real, você enviaria isto para um backend seguro
+      // Aqui, estamos apenas simulando o armazenamento no localStorage
+      if (openaiApiKey) {
+        localStorage.setItem('openai_api_key', openaiApiKey);
+        
+        // Recarregar a página para aplicar a nova chave
+        toast({
+          title: 'Chave da API salva',
+          description: 'A chave da API OpenAI foi configurada. A página será recarregada para aplicar as alterações.',
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+        
+        setTimeout(() => {
+          window.location.reload();
+        }, 3000);
+      } else {
+        toast({
+          title: 'Chave inválida',
+          description: 'Por favor, insira uma chave de API válida.',
+          status: 'error',
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Erro',
+        description: 'Ocorreu um erro ao salvar a chave da API.',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      console.error('Erro ao salvar a chave da API:', error);
+    } finally {
+      setIsSavingApiKey(false);
+    }
+  };
+  
   return (
     <DashboardLayout>
       <Head>
@@ -163,6 +224,7 @@ export default function Settings() {
             <Tab><Icon as={FiLock} mr={2} /> Segurança</Tab>
             <Tab><Icon as={FiBell} mr={2} /> Notificações</Tab>
             <Tab><Icon as={FiSettings} mr={2} /> Preferências</Tab>
+            <Tab><Icon as={FiCpu} mr={2} /> API</Tab>
           </TabList>
           
           <TabPanels mt={4}>
@@ -738,6 +800,72 @@ export default function Settings() {
                     >
                       Salvar Preferências
                     </Button>
+                  </VStack>
+                </CardBody>
+              </Card>
+            </TabPanel>
+            
+            {/* Painel de API */}
+            <TabPanel p={0}>
+              <Card>
+                <CardHeader pb={0}>
+                  <Heading size="md">Configuração de API</Heading>
+                </CardHeader>
+                <CardBody>
+                  <VStack spacing={6} align="stretch">
+                    <Box>
+                      <Heading size="sm" mb={4}>OpenAI API</Heading>
+                      <Text color="gray.500" mb={4}>
+                        Configure sua chave de API da OpenAI para usar os recursos de transcrição de áudio e análise de entrevistas.
+                        Você pode obter sua chave em <Link href="https://platform.openai.com/account/api-keys" isExternal color="brand.500">platform.openai.com</Link>.
+                      </Text>
+                      
+                      <FormControl mb={4}>
+                        <FormLabel>Chave da API OpenAI</FormLabel>
+                        <InputGroup>
+                          <Input
+                            type={showApiKey ? 'text' : 'password'}
+                            value={openaiApiKey}
+                            onChange={(e) => setOpenaiApiKey(e.target.value)}
+                            placeholder="sk-..."
+                          />
+                          <InputRightElement>
+                            <Icon
+                              as={showApiKey ? FiEyeOff : FiEye}
+                              color="gray.500"
+                              cursor="pointer"
+                              onClick={() => setShowApiKey(!showApiKey)}
+                            />
+                          </InputRightElement>
+                        </InputGroup>
+                        <FormHelperText>
+                          Esta chave é armazenada localmente e não é compartilhada com outros usuários.
+                        </FormHelperText>
+                      </FormControl>
+                      
+                      <Button 
+                        colorScheme="brand"
+                        leftIcon={<FiSave />}
+                        onClick={handleSaveApiConfig}
+                        isLoading={isSavingApiKey}
+                        loadingText="Salvando..."
+                      >
+                        Salvar Chave
+                      </Button>
+                    </Box>
+                    
+                    <Divider />
+                    
+                    <Box>
+                      <Heading size="sm" mb={4}>Uso da API</Heading>
+                      <Text fontSize="sm" color="gray.500" mb={2}>
+                        A API da OpenAI é um serviço pago. Você será cobrado conforme o uso. 
+                        Para saber mais sobre os preços, visite a <Link href="https://openai.com/pricing" isExternal color="brand.500">página de preços da OpenAI</Link>.
+                      </Text>
+                      <Text fontSize="sm" color="gray.500">
+                        Importante: Nunca compartilhe sua chave de API com terceiros. A chave dá acesso à sua conta e créditos.
+                      </Text>
+                    </Box>
                   </VStack>
                 </CardBody>
               </Card>

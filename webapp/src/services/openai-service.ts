@@ -1,11 +1,28 @@
 import axios from 'axios';
 
-// Configura a chave da API (em uma aplicação real, isso deveria ser armazenado em variáveis de ambiente)
-const OPENAI_API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY || '';
+// Placeholder para fallback (em uma implementação real, nunca se deve colocar chaves no código fonte)
+const FALLBACK_API_KEY = 'sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
+
+// Verificar se há uma chave API no localStorage
+let LOCAL_STORAGE_API_KEY = '';
+if (typeof window !== 'undefined') {
+  // Este código só será executado no navegador
+  LOCAL_STORAGE_API_KEY = localStorage.getItem('openai_api_key') || '';
+}
+
+// Configura a chave da API (ordem de prioridade: localStorage > variável de ambiente > fallback)
+const OPENAI_API_KEY = LOCAL_STORAGE_API_KEY || process.env.NEXT_PUBLIC_OPENAI_API_KEY || FALLBACK_API_KEY;
+
 // Verificar se a chave da API foi fornecida
 if (!OPENAI_API_KEY) {
   console.warn('Chave da API OpenAI não configurada. Configure a variável de ambiente NEXT_PUBLIC_OPENAI_API_KEY');
+  console.log('Valor da variável NEXT_PUBLIC_OPENAI_API_KEY:', process.env.NEXT_PUBLIC_OPENAI_API_KEY);
+  console.log('Variáveis de ambiente disponíveis:', Object.keys(process.env).filter(key => key.startsWith('NEXT_PUBLIC')));
 }
+
+// Log para debug
+console.log('OpenAI API Key status:', OPENAI_API_KEY ? 'Configurada' : 'Não configurada');
+console.log('OpenAI API Key fonte:', LOCAL_STORAGE_API_KEY ? 'localStorage' : (process.env.NEXT_PUBLIC_OPENAI_API_KEY ? 'Variável de ambiente' : 'Fallback'));
 
 // Configura o cliente HTTP com o header de autorização
 const openaiClient = axios.create({
