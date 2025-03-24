@@ -492,4 +492,42 @@ body {
   .inviewai-overlay {
     width: 320px;
   }
+}
+
+/* Estilos para o indicador de status de áudio */
+.inviewai-status-indicator {
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  margin: 5px 0;
+  font-size: 14px;
+}
+
+.inviewai-status-icon {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+.inviewai-status-text {
+  flex: 1;
+  font-weight: 500;
+}
+
+.inviewai-audio-level-meter {
+  width: 60px;
+  height: 8px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-left: 8px;
+}
+
+.inviewai-audio-level-bar {
+  height: 100%;
+  width: 0%;
+  background-color: #4CAF50;
+  border-radius: 4px;
+  transition: width 0.2s ease, background-color 0.2s ease;
 } 

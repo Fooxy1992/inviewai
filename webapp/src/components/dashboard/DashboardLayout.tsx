@@ -49,9 +49,9 @@ export default function DashboardLayout({ children, pageTitle = 'Dashboard' }: D
       <Flex flex="1" overflow="hidden">
         {/* Sidebar do Dashboard */}
         <DashboardSidebar 
-          isOpen={isSidebarOpen} 
-          isMobile={isMobileView}
           onClose={() => setIsSidebarOpen(false)}
+          isLargeScreen={!isMobileView}
+          isPermanentlyOpen={isSidebarOpen}
         />
         
         {/* Área de conteúdo principal */}

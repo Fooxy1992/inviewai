@@ -3,34 +3,62 @@ node_modules/
 .pnp/
 .pnp.js
 
-# Produção
-/build/
-/out/
+# Arquivos de build
 .next/
+out/
+build/
 dist/
 
-# Testes
-/coverage/
+# Arquivos de cache
+.npm/
+.eslintcache
+.parcel-cache/
 
-# Debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Variáveis de ambiente e configurações locais
+# Arquivos de ambiente
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+.vercel
 
 # Logs
-logs
+logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Arquivos de sistema
+# Arquivos do sistema
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# Arquivos temporários
+*.swp
+*.swo
+*.tmp
+*.bak
+
+# IDE e editores
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+.settings/
+
+# Específicos para a extensão do Chrome
+extension/*.zip
+extension/*.crx
+extension/*.pem
+
+# Arquivo de configuração personalizado (para manter segredos fora do repositório)
+webapp/.env.local
+
+# Testes
+/coverage/
 
 # Chaves de acesso e configurações secretas
 *.pem
@@ -38,15 +66,9 @@ Thumbs.db
 firebase-admin-sdk.json
 firebase.json
 
-# Arquivos específicos
-extension.zip
-
 # Firebase
 .firebase/
 firebase-debug.log
-
-# Vercel
-.vercel
 
 # IDE
 .idea/

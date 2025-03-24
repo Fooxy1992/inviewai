@@ -9,7 +9,7 @@ import {
   Text,
   useColorModeValue,
 } from '@chakra-ui/react';
-import { FaAi, FaLock, FaClock, FaChartLine, FaComments, FaRobot } from 'react-icons/fa';
+import { FaLock, FaClock, FaChartLine, FaComments, FaRobot, FaBrain } from 'react-icons/fa';
 import { ReactElement } from 'react';
 
 interface FeatureProps {
@@ -75,7 +75,7 @@ export default function FeaturesSection() {
 
         <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={10}>
           <Feature
-            icon={<Icon as={FaAi} w={10} h={10} />}
+            icon={<Icon as={FaBrain} w={10} h={10} />}
             title={'Análise de IA'}
             text={
               'Nossa tecnologia de ponta analisa sua linguagem corporal, expressões faciais e tom de voz para fornecer feedback abrangente sobre sua apresentação.'

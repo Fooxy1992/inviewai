@@ -63,8 +63,27 @@
   async function tryGetMeetAudioStream() {
     const audioElements = findMeetAudioElements();
     
+    debugLog('Buscando elementos de áudio do Meet. Resultado:', 
+             audioElements ? `Encontrados ${audioElements.length} elementos` : 'Nenhum elemento encontrado');
+    
     if (!audioElements || audioElements.length === 0) {
-      debugLog('Nenhum elemento de áudio do Meet encontrado');
+      debugLog('Nenhum elemento de áudio do Meet encontrado. Tentando consulta DOM mais ampla.');
+      
+      // Log de todos os elementos de áudio na página para diagnóstico
+      const allAudioElements = document.querySelectorAll('audio');
+      debugLog(`Total de elementos <audio> na página: ${allAudioElements.length}`);
+      allAudioElements.forEach((el, i) => {
+        debugLog(`Áudio ${i+1}:`, {
+          id: el.id,
+          src: el.src,
+          paused: el.paused,
+          muted: el.muted,
+          volume: el.volume,
+          duration: el.duration,
+          attributes: Array.from(el.attributes).map(a => `${a.name}="${a.value}"`).join(' ')
+        });
+      });
+      
       return null;
     }
     
@@ -109,6 +128,127 @@
   }
 
   /**
+   * Tenta obter áudio através de captura de tela
+   * Este método tenta capturar o áudio do sistema que está sendo reproduzido
+   */
+  async function getDisplayMediaAudio() {
+    try {
+      debugLog('Tentando capturar áudio via getDisplayMedia');
+      
+      // Verificar suporte
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+        debugLog('getDisplayMedia não é suportado neste navegador');
+        return null;
+      }
+      
+      // Solicitar acesso à tela com áudio
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: false,
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
+      
+      // Verificar se temos faixas de áudio
+      if (stream.getAudioTracks().length === 0) {
+        debugLog('Stream de captura de tela não tem faixas de áudio');
+        stream.getTracks().forEach(track => track.stop());
+        return null;
+      }
+      
+      debugLog('Captura de áudio via getDisplayMedia bem-sucedida');
+      return stream;
+    } catch (error) {
+      debugLog('Erro ao capturar áudio via getDisplayMedia:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Gera um stream de áudio simulado para testes
+   * Útil quando não conseguimos capturar áudio real
+   */
+  function createSimulatedAudioStream() {
+    debugLog('Criando stream de áudio simulado para testes');
+    
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    
+    // Configurar o oscilador para frequência de voz humana e volume baixo
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(440, ctx.currentTime); // 440Hz é Lá padrão
+    gainNode.gain.setValueAtTime(0.01, ctx.currentTime); // Volume muito baixo
+    
+    // Conectar os nós
+    oscillator.connect(gainNode);
+    
+    // Criar um stream a partir do nó de ganho
+    const destination = ctx.createMediaStreamDestination();
+    gainNode.connect(destination);
+    
+    // Iniciar o oscilador
+    oscillator.start();
+    
+    debugLog('Stream de áudio simulado criado com sucesso');
+    return destination.stream;
+  }
+
+  /**
+   * Emite um evento de status de captura de áudio
+   */
+  function emitStatusEvent(statusData) {
+    const event = new CustomEvent('audiocapture:status', {
+      detail: {
+        isCapturing,
+        source: statusData.source || 'none',
+        timestamp: Date.now(),
+        ...statusData
+      }
+    });
+    
+    dispatchEvent(event);
+    debugLog('Evento de status emitido:', event.detail);
+  }
+
+  /**
+   * Emite um evento de nível de áudio
+   */
+  function emitAudioLevelEvent(level) {
+    const event = new CustomEvent('audiocapture:level', {
+      detail: {
+        level,
+        timestamp: Date.now()
+      }
+    });
+    
+    dispatchEvent(event);
+  }
+
+  /**
+   * Calcula o nível de áudio a partir de um buffer de áudio
+   */
+  function calculateAudioLevel(audioBuffer) {
+    if (!audioBuffer || !audioBuffer.length) return 0;
+    
+    // Calcular RMS (Root Mean Square) do buffer
+    let sum = 0;
+    for (let i = 0; i < audioBuffer.length; i++) {
+      sum += audioBuffer[i] * audioBuffer[i];
+    }
+    
+    const rms = Math.sqrt(sum / audioBuffer.length);
+    
+    // Normalizar para um valor entre 0 e 1
+    // Valores típicos de RMS são muito pequenos, então aplicamos uma escala
+    const normalizedLevel = Math.min(1, Math.max(0, rms * 5));
+    
+    return normalizedLevel;
+  }
+
+  /**
    * Inicia a captura de áudio
    * @param {Function} processingCallback - Função para processar os dados de áudio
    * @returns {boolean} - true se iniciado com sucesso, false caso contrário
@@ -118,6 +258,22 @@
       debugLog('Captura já está ativa');
       return false;
     }
+    
+    debugLog('=== INICIANDO DIAGNÓSTICO DE CAPTURA DE ÁUDIO ===');
+    debugLog('Informações do navegador:', {
+      userAgent: navigator.userAgent,
+      plataforma: navigator.platform,
+      vendor: navigator.vendor
+    });
+    
+    debugLog('Verificando suporte a APIs de áudio:', {
+      AudioContext: typeof AudioContext !== 'undefined',
+      webkitAudioContext: typeof webkitAudioContext !== 'undefined',
+      mediaDevices: !!navigator.mediaDevices,
+      getUserMedia: !!navigator.mediaDevices?.getUserMedia,
+      captureStream: typeof HTMLAudioElement.prototype.captureStream === 'function',
+      mozCaptureStream: typeof HTMLAudioElement.prototype.mozCaptureStream === 'function'
+    });
     
     if (typeof processingCallback !== 'function') {
       console.error('Callback de processamento inválido');
@@ -136,23 +292,43 @@
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
       
       // Primeiro tentar capturar áudio do Meet
-      const meetStream = await tryGetMeetAudioStream();
+      let meetStream = await tryGetMeetAudioStream();
+      let audioSource = 'none';
       
-      // Se não conseguimos capturar do Meet, tentar o microfone local
+      // Se não conseguimos capturar do Meet, tentar captura de tela
       if (!meetStream) {
-        debugLog('Não foi possível capturar áudio do Meet, tentando microfone local');
-        mediaStream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
-          },
-          video: false
-        });
-        debugLog('Microfone local capturado com sucesso');
+        debugLog('Não foi possível capturar áudio do Meet, tentando captura de tela');
+        meetStream = await getDisplayMediaAudio();
+        audioSource = meetStream ? 'display' : 'none';
+      } else {
+        audioSource = 'meet';
+      }
+      
+      // Se não conseguimos capturar da tela, tentar o microfone local
+      if (!meetStream) {
+        debugLog('Não foi possível capturar áudio da tela, tentando microfone local');
+        try {
+          mediaStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true
+            },
+            video: false
+          });
+          debugLog('Captura de microfone bem-sucedida:', mediaStream);
+          audioSource = 'mic';
+        } catch (micError) {
+          debugLog('Erro ao capturar microfone:', micError);
+          
+          // Último recurso: criar um stream simulado para testes
+          debugLog('Usando stream de áudio simulado como último recurso');
+          mediaStream = createSimulatedAudioStream();
+          audioSource = 'simulated';
+        }
       } else {
         mediaStream = meetStream;
-        debugLog('Stream do Google Meet capturado com sucesso');
+        debugLog('Usando stream do Meet/Captura:', mediaStream);
       }
       
       // Conectar stream ao contexto de áudio
@@ -166,7 +342,7 @@
       // Criar processador de script para análise
       audioProcessor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
       
-      audioProcessor.addEventListener('audioprocess', processAudioEvent);
+      audioProcessor.addEventListener('audioprocess', processAudio);
       
       // Conectar nós
       audioAnalyser.connect(audioProcessor);
@@ -174,14 +350,23 @@
       
       isCapturing = true;
       
+      // Emitir evento de status
+      emitStatusEvent({ 
+        source: audioSource,
+        error: null
+      });
+      
       // Disparar evento
       dispatchEvent(new CustomEvent('audiocapture:started', {
-        detail: { source: meetStream ? 'google-meet' : 'microphone' }
+        detail: { source: audioSource }
       }));
       
       return true;
     } catch (error) {
       console.error('Erro ao iniciar captura de áudio:', error);
+      emitStatusEvent({ 
+        error: error.message || 'Erro desconhecido ao iniciar captura de áudio'
+      });
       dispatchEvent(new CustomEvent('audiocapture:error', {
         detail: { error: error.message || error.toString() }
       }));
@@ -193,10 +378,13 @@
   }
   
   /**
-   * Processa eventos de áudio
+   * Processa os dados de áudio
+   * Esta função é chamada com dados de áudio brutos
    */
-  function processAudioEvent(event) {
-    if (!isCapturing || !callback) return;
+  function processAudio(event) {
+    if (!isCapturing || !callback) {
+      return;
+    }
     
     // Obter dados de volume
     const bufferLength = audioAnalyser.frequencyBinCount;
@@ -220,12 +408,22 @@
       buffer: new Float32Array(inputBuffer.getChannelData(0))
     };
     
-    // Invocar callback com os dados processados
-    callback({
-      timestamp: Date.now(),
-      volume: averageVolume,
-      buffer: audioBuffer
-    });
+    // Calcular o nível de áudio
+    const level = calculateAudioLevel(audioBuffer.buffer);
+    
+    // Emitir evento de nível de áudio a cada 5 chamadas para não sobrecarregar
+    if (Math.random() < 0.2) { // ~20% das chamadas
+      emitAudioLevelEvent(level);
+    }
+    
+    // Chamar o callback com os dados de áudio
+    if (typeof callback === 'function') {
+      try {
+        callback(audioBuffer, { level });
+      } catch (e) {
+        console.error('Erro no callback de processamento de áudio:', e);
+      }
+    }
   }
   
   /**
@@ -238,7 +436,7 @@
     
     // Limpar processador
     if (audioProcessor) {
-      audioProcessor.removeEventListener('audioprocess', processAudioEvent);
+      audioProcessor.removeEventListener('audioprocess', processAudio);
       audioProcessor.disconnect();
       audioProcessor = null;
     }

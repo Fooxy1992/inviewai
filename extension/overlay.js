@@ -16,6 +16,12 @@ const appState = {
   userId: null,
   token: null,
   currentTranscription: null,
+  audioStatus: {
+    isCapturing: false,
+    source: 'none', // 'meet', 'display', 'mic', 'simulated', 'none'
+    level: 0,
+    error: null
+  },
   settings: {
     realtime: true,
     contentSuggestions: true,
@@ -603,4 +609,106 @@ function playNotificationSound() {
   } catch (e) {
     console.error('Erro ao reproduzir som:', e);
   }
-} 
+}
+
+// Adicionar elemento para status de áudio na interface
+function createAudioStatusIndicator() {
+  const statusContainer = document.createElement('div');
+  statusContainer.id = 'inviewai-audio-status';
+  statusContainer.className = 'inviewai-status-indicator';
+  statusContainer.innerHTML = `
+    <div class="inviewai-status-icon">🎤</div>
+    <div class="inviewai-status-text">Áudio: <span id="inviewai-audio-status-text">Inicializando...</span></div>
+    <div class="inviewai-audio-level-meter">
+      <div id="inviewai-audio-level-bar" class="inviewai-audio-level-bar"></div>
+    </div>
+  `;
+  
+  // Adicionar ao overlay na parte superior
+  const headerSection = document.querySelector('.inviewai-header');
+  if (headerSection) {
+    headerSection.appendChild(statusContainer);
+  } else {
+    overlay.prepend(statusContainer);
+  }
+  
+  return {
+    container: statusContainer,
+    text: statusContainer.querySelector('#inviewai-audio-status-text'),
+    levelBar: statusContainer.querySelector('#inviewai-audio-level-bar')
+  };
+}
+
+// Atualizar o indicador de status de áudio
+function updateAudioStatus(status) {
+  if (!window.audioStatusElements) {
+    window.audioStatusElements = createAudioStatusIndicator();
+  }
+  
+  const { text, levelBar } = window.audioStatusElements;
+  
+  // Atualizar o texto de acordo com o status
+  if (status.error) {
+    text.textContent = `Erro: ${status.error}`;
+    text.style.color = 'red';
+  } else if (status.isCapturing) {
+    let sourceText = '';
+    switch (status.source) {
+      case 'meet':
+        sourceText = 'Google Meet';
+        break;
+      case 'display':
+        sourceText = 'Captura de Tela';
+        break;
+      case 'mic':
+        sourceText = 'Microfone';
+        break;
+      case 'simulated':
+        sourceText = 'Simulado (Teste)';
+        break;
+      default:
+        sourceText = 'Desconhecido';
+    }
+    text.textContent = `Capturando (${sourceText})`;
+    text.style.color = '#4CAF50';
+  } else {
+    text.textContent = 'Não capturando';
+    text.style.color = '#FFA500';
+  }
+  
+  // Atualizar o medidor de nível
+  if (levelBar) {
+    const level = status.level || 0;
+    levelBar.style.width = `${Math.min(100, level * 100)}%`;
+    
+    // Cor baseada no nível
+    if (level > 0.7) {
+      levelBar.style.backgroundColor = '#FF5252';
+    } else if (level > 0.3) {
+      levelBar.style.backgroundColor = '#4CAF50';
+    } else {
+      levelBar.style.backgroundColor = '#FFA500';
+    }
+  }
+}
+
+// Adicionar um listener para eventos de status de áudio
+document.addEventListener('audiocapture:status', (event) => {
+  console.log('Status de captura de áudio atualizado:', event.detail);
+  appState.audioStatus = event.detail;
+  updateAudioStatus(event.detail);
+});
+
+// Adicionar um listener para eventos de erro de áudio
+document.addEventListener('audiocapture:error', (event) => {
+  console.error('Erro na captura de áudio:', event.detail);
+  appState.audioStatus.error = event.detail.error;
+  appState.audioStatus.isCapturing = false;
+  updateAudioStatus(appState.audioStatus);
+});
+
+// Adicionar um listener para eventos de nível de áudio
+document.addEventListener('audiocapture:level', (event) => {
+  appState.audioStatus.level = event.detail.level;
+  updateAudioStatus(appState.audioStatus);
+}); 

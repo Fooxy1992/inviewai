@@ -59,6 +59,7 @@ import {
 import DashboardLayout from '../../../../components/dashboard/DashboardLayout';
 import { getSuggestionForQuestion } from '../../../../services/openai-service';
 import { useAudioCapture } from '../../../../hooks/useAudioCapture';
+import { Transcription } from '../../../../services/openai-service';
 
 // Interfaces
 interface Message {
@@ -280,13 +281,14 @@ export default function VirtualAssistant() {
   };
   
   // Função para processar a transcrição recebida
-  async function handleTranscriptionReceived(transcription: { text: string, speaker: 'you' | 'interviewer' }) {
-    if (!transcription.text.trim() || transcription.speaker !== 'you') return;
+  async function handleTranscriptionReceived(transcription: Transcription) {
+    // Ignorar se não tivermos texto ou se a entrevista não estiver ativa
+    if (!transcription.text || !isInterviewActive) return;
     
-    // Parar a gravação quando o usuário terminar de falar
-    stopRecording();
+    // Garantir que temos um speaker (default para 'you' se não especificado)
+    const speaker = transcription.speaker || 'you';
     
-    // Adicionar resposta do usuário
+    // Adicionar a transcrição à conversa
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       sender: 'user',
@@ -296,44 +298,48 @@ export default function VirtualAssistant() {
     
     setMessages(prev => [...prev, userMessage]);
     
-    // Buscar sugestões de feedback para a resposta
-    try {
-      const currentQuestion = currentTemplate?.questions[currentQuestionIndex - 1];
-      if (currentQuestion) {
-        setIsTyping(true);
-        
-        // Chamar a API para obter feedback (simulado aqui)
-        const suggestionResponse = await getSuggestionForQuestion({
-          question: currentQuestion,
+    // Se for o usuário falando, processar a resposta
+    if (speaker === 'you') {
+      setIsTyping(true);
+      
+      try {
+        // Gerar feedback usando a API do OpenAI
+        const suggestionResult = await getSuggestionForQuestion({
+          question: currentTemplate?.questions[currentQuestionIndex] || '',
           userResponse: transcription.text,
-          jobTitle: jobTitle || 'esta posição',
+          jobTitle: jobTitle || 'Candidato',
           context: `Entrevista para ${jobTitle} ${companyName ? `na ${companyName}` : ''}`
         });
         
-        // Atualizar a mensagem do usuário com feedback
-        setMessages(prev => 
-          prev.map(msg => 
-            msg.id === userMessage.id 
-              ? { ...msg, feedback: suggestionResponse.feedback } 
-              : msg
-          )
-        );
+        // Adicionar feedback como anotações na mensagem do usuário
+        if (suggestionResult.feedback && suggestionResult.feedback.length > 0) {
+          setMessages(prev => {
+            const updated = [...prev];
+            const lastUserMessageIndex = updated.findIndex(m => m.id === userMessage.id);
+            
+            if (lastUserMessageIndex !== -1) {
+              updated[lastUserMessageIndex] = {
+                ...updated[lastUserMessageIndex],
+                feedback: suggestionResult.feedback
+              };
+            }
+            
+            return updated;
+          });
+        }
         
+      } catch (err) {
+        console.error('Erro ao processar resposta:', err);
+      } finally {
         setIsTyping(false);
         
-        // Pequeno delay antes da próxima pergunta
-        setTimeout(() => {
-          askNextQuestion();
-        }, 1000);
+        // Se não estiver pausado, avançar para a próxima pergunta após um delay
+        if (!pauseAfterQuestion) {
+          setTimeout(() => {
+            continueInterview();
+          }, 2000);
+        }
       }
-    } catch (error) {
-      console.error('Erro ao obter feedback:', error);
-      setIsTyping(false);
-      
-      // Continuar mesmo sem feedback
-      setTimeout(() => {
-        askNextQuestion();
-      }, 1000);
     }
   }
   
