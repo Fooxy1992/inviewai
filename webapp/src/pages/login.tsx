@@ -27,6 +27,8 @@ import Head from 'next/head';
 import Header from '../components/layout/Header';
 import Footer from '../components/layout/Footer';
 import { FcGoogle } from 'react-icons/fc';
+import { signIn } from 'next-auth/react';
+import { useRouter } from 'next/router';
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -34,6 +36,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
+  const router = useRouter();
   
   // Cores do tema
   const bgColor = useColorModeValue('white', 'gray.800');
@@ -57,28 +60,54 @@ export default function Login() {
     
     setIsLoading(true);
     
-    // Simulação de login
-    setTimeout(() => {
-      // Redirecionamento para o dashboard após login bem-sucedido
-      window.location.href = '/dashboard';
+    try {
+      const result = await signIn('credentials', {
+        redirect: false,
+        email,
+        password,
+      });
+      
+      if (result?.error) {
+        throw new Error(result.error);
+      }
+      
+      toast({
+        title: 'Login bem-sucedido',
+        description: 'Você será redirecionado para o dashboard.',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      
+      router.push('/dashboard');
+    } catch (error) {
+      toast({
+        title: 'Erro de autenticação',
+        description: error instanceof Error ? error.message : 'Falha na autenticação',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
   
-  const handleSocialLogin = (provider: string) => {
+  const handleSocialLogin = async (provider: string) => {
     setIsLoading(true);
     
-    // Simulação de login com provedor social
-    setTimeout(() => {
+    try {
+      await signIn(provider.toLowerCase(), { callbackUrl: '/dashboard' });
+    } catch (error) {
       toast({
-        title: 'Login com provedor social',
-        description: `Login com ${provider} iniciado.`,
-        status: 'info',
+        title: 'Erro de autenticação',
+        description: error instanceof Error ? error.message : `Falha no login com ${provider}`,
+        status: 'error',
         duration: 3000,
         isClosable: true,
       });
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (

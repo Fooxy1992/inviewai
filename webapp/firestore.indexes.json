@@ -1,0 +1,47 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "entrevistas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "usuarioId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "dataAtualizacao",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "perguntas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "entrevistaId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "pontuacao",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "atividades",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "usuarioId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "data",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+} 
