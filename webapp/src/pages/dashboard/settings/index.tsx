@@ -1,409 +1,749 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
 import {
+  Avatar,
+  AvatarBadge,
   Box,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Divider,
+  Flex,
+  FormControl,
+  FormHelperText,
+  FormLabel,
+  Grid,
+  GridItem,
+  Heading,
+  HStack,
+  Icon,
+  Input,
+  InputGroup,
+  InputRightElement,
+  Select,
+  Stack,
+  Switch,
   Tab,
-  Tabs,
   TabList,
   TabPanel,
   TabPanels,
-  Heading,
+  Tabs,
   Text,
-  useColorModeValue,
-  Grid,
-  GridItem,
-  Card,
-  CardBody,
-  Stack,
-  FormControl,
-  FormLabel,
-  Input,
-  Button,
-  Flex,
-  Switch,
-  Avatar,
-  IconButton,
-  Divider,
-  FormHelperText,
-  Select,
   Textarea,
+  useColorModeValue,
+  useToast,
+  VStack,
 } from '@chakra-ui/react';
-import { FiUser, FiCamera, FiLock, FiSave } from 'react-icons/fi';
+import {
+  FiUser,
+  FiEdit2,
+  FiLock,
+  FiEye,
+  FiEyeOff,
+  FiSettings,
+  FiSave,
+  FiBell,
+  FiTrash2,
+  FiUpload,
+  FiGlobe,
+  FiShield,
+  FiGithub,
+  FiLinkedin,
+  FiTwitter,
+} from 'react-icons/fi';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 
+// Componente principal da página de Configurações
 export default function Settings() {
-  const [tabIndex, setTabIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  // Estados para formulários
+  const [firstName, setFirstName] = useState('João');
+  const [lastName, setLastName] = useState('Silva');
+  const [email, setEmail] = useState('joao.silva@example.com');
+  const [phone, setPhone] = useState('(11) 99999-9999');
+  const [location, setLocation] = useState('São Paulo, SP');
+  const [bio, setBio] = useState('Desenvolvedor de software com 5 anos de experiência, especializado em frontend com React e TypeScript.');
+  const [showPassword, setShowPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [githubUrl, setGithubUrl] = useState('https://github.com/joaosilva');
+  const [linkedinUrl, setLinkedinUrl] = useState('https://linkedin.com/in/joaosilva');
+  const [twitterUrl, setTwitterUrl] = useState('');
   
-  // Cores para o tema
-  const bg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  // Estados para notificações
+  const [emailNotifications, setEmailNotifications] = useState(true);
+  const [practiceReminders, setPracticeReminders] = useState(true);
+  const [interviewNotifications, setInterviewNotifications] = useState(true);
+  const [feedbackNotifications, setFeedbackNotifications] = useState(true);
+  const [marketingEmails, setMarketingEmails] = useState(false);
   
-  // Manipulação de formulários
-  const handleProfileSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    // Simulação de envio de dados
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
+  // Estados para preferências
+  const [language, setLanguage] = useState('pt-BR');
+  const [colorMode, setColorMode] = useState('light');
+  const [showTips, setShowTips] = useState(true);
+  const [audioTranscription, setAudioTranscription] = useState(true);
+  const [autoSave, setAutoSave] = useState(true);
+  
+  const toast = useToast();
+  const bgColor = useColorModeValue('gray.50', 'gray.900');
+  
+  // Função para salvar perfil
+  const handleSaveProfile = () => {
+    toast({
+      title: 'Perfil atualizado',
+      status: 'success',
+      duration: 3000,
+      isClosable: true,
+    });
   };
   
-  const handleSecuritySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    // Simulação de envio de dados
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
+  // Função para alterar senha
+  const handleChangePassword = () => {
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: 'Erro',
+        description: 'As senhas não coincidem',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+    
+    toast({
+      title: 'Senha alterada com sucesso',
+      status: 'success',
+      duration: 3000,
+      isClosable: true,
+    });
+    
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
   };
   
-  const handleNotificationsSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    // Simulação de envio de dados
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
+  // Função para salvar notificações
+  const handleSaveNotifications = () => {
+    toast({
+      title: 'Notificações atualizadas',
+      status: 'success',
+      duration: 3000,
+      isClosable: true,
+    });
   };
-
+  
+  // Função para salvar preferências
+  const handleSavePreferences = () => {
+    toast({
+      title: 'Preferências atualizadas',
+      status: 'success',
+      duration: 3000,
+      isClosable: true,
+    });
+  };
+  
   return (
-    <>
+    <DashboardLayout>
       <Head>
-        <title>Configurações - InViewAI</title>
-        <meta name="description" content="Gerencie suas configurações de conta" />
+        <title>Configurações | InViewAI</title>
       </Head>
-      
-      <DashboardLayout pageTitle="Configurações">
-        <Box py={4}>
-          <Tabs 
-            isFitted 
-            variant="enclosed" 
-            index={tabIndex} 
-            onChange={(index) => setTabIndex(index)}
-            colorScheme="brand"
-          >
-            <TabList mb="1em">
-              <Tab>Perfil</Tab>
-              <Tab>Segurança</Tab>
-              <Tab>Notificações</Tab>
-              <Tab>Privacidade</Tab>
-            </TabList>
-            
-            <TabPanels>
-              {/* Painel de Perfil */}
-              <TabPanel>
-                <Card bg={bg} borderWidth="1px" borderColor={borderColor} shadow="sm">
-                  <CardBody>
-                    <form onSubmit={handleProfileSubmit}>
-                      <Grid templateColumns={{ base: '1fr', md: '1fr 2fr' }} gap={8}>
-                        {/* Coluna da foto */}
-                        <GridItem>
-                          <Stack spacing={6} align="center">
-                            <Heading size="md">Foto de Perfil</Heading>
-                            <Box position="relative">
-                              <Avatar 
-                                size="2xl" 
-                                name="João Silva" 
-                                src="/images/user-avatar.jpg" 
-                              />
-                              <IconButton
-                                aria-label="Alterar foto"
-                                icon={<FiCamera />}
-                                size="sm"
-                                colorScheme="brand"
-                                rounded="full"
-                                position="absolute"
-                                bottom={0}
-                                right={0}
-                              />
-                            </Box>
-                            <Text fontSize="sm" color="gray.500" textAlign="center">
-                              Clique no ícone da câmera para alterar sua foto
-                            </Text>
-                          </Stack>
-                        </GridItem>
-                        
-                        {/* Coluna de informações */}
-                        <GridItem>
-                          <Stack spacing={5}>
-                            <Heading size="md">Informações Pessoais</Heading>
-                            
-                            <Grid templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }} gap={4}>
-                              <FormControl>
-                                <FormLabel>Nome</FormLabel>
-                                <Input defaultValue="João" />
-                              </FormControl>
-                              
-                              <FormControl>
-                                <FormLabel>Sobrenome</FormLabel>
-                                <Input defaultValue="Silva" />
-                              </FormControl>
-                            </Grid>
-                            
-                            <FormControl>
-                              <FormLabel>Email</FormLabel>
-                              <Input defaultValue="joao.silva@exemplo.com" isReadOnly />
-                              <FormHelperText>
-                                Para alterar seu email, acesse a aba Segurança
-                              </FormHelperText>
-                            </FormControl>
-                            
-                            <FormControl>
-                              <FormLabel>Telefone</FormLabel>
-                              <Input defaultValue="+55 (11) 98765-4321" />
-                            </FormControl>
-                            
-                            <FormControl>
-                              <FormLabel>Cargo atual</FormLabel>
-                              <Input defaultValue="Desenvolvedor Full Stack" />
-                            </FormControl>
-                            
-                            <FormControl>
-                              <FormLabel>Empresa</FormLabel>
-                              <Input defaultValue="TechBrasil" />
-                            </FormControl>
-                            
-                            <FormControl>
-                              <FormLabel>Bio</FormLabel>
-                              <Textarea 
-                                defaultValue="Desenvolvedor Full Stack com experiência em React, Node.js e TypeScript. Apaixonado por criar experiências de usuário intuitivas e escaláveis."
-                                rows={4}
-                              />
-                            </FormControl>
-                            
-                            <Flex justify="flex-end">
-                              <Button
-                                type="submit"
-                                colorScheme="brand"
-                                isLoading={isLoading}
-                                leftIcon={<FiSave />}
-                              >
-                                Salvar Alterações
-                              </Button>
-                            </Flex>
-                          </Stack>
-                        </GridItem>
-                      </Grid>
-                    </form>
-                  </CardBody>
-                </Card>
-              </TabPanel>
-              
-              {/* Painel de Segurança */}
-              <TabPanel>
-                <Card bg={bg} borderWidth="1px" borderColor={borderColor} shadow="sm">
-                  <CardBody>
-                    <form onSubmit={handleSecuritySubmit}>
-                      <Stack spacing={6}>
-                        <Heading size="md">Alterar Senha</Heading>
+      <Box p={5} bg={bgColor} minH="calc(100vh - 80px)">
+        <Flex mb={6} direction={{ base: 'column', md: 'row' }} justify="space-between" align={{ base: 'start', md: 'center' }}>
+          <Box mb={{ base: 4, md: 0 }}>
+            <Heading size="lg">Configurações</Heading>
+            <Text color="gray.500">Gerencie seu perfil e preferências da conta</Text>
+          </Box>
+        </Flex>
+        
+        <Tabs colorScheme="brand" variant="enclosed" mb={8}>
+          <TabList>
+            <Tab><Icon as={FiUser} mr={2} /> Perfil</Tab>
+            <Tab><Icon as={FiLock} mr={2} /> Segurança</Tab>
+            <Tab><Icon as={FiBell} mr={2} /> Notificações</Tab>
+            <Tab><Icon as={FiSettings} mr={2} /> Preferências</Tab>
+          </TabList>
+          
+          <TabPanels mt={4}>
+            {/* Painel de Perfil */}
+            <TabPanel p={0}>
+              <Grid templateColumns={{ base: "1fr", lg: "3fr 2fr" }} gap={6}>
+                <GridItem>
+                  <Card mb={6}>
+                    <CardHeader pb={0}>
+                      <Heading size="md">Informações Pessoais</Heading>
+                    </CardHeader>
+                    <CardBody>
+                      <VStack spacing={4} align="stretch">
+                        <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4}>
+                          <FormControl>
+                            <FormLabel>Nome</FormLabel>
+                            <Input 
+                              value={firstName}
+                              onChange={(e) => setFirstName(e.target.value)}
+                            />
+                          </FormControl>
+                          
+                          <FormControl>
+                            <FormLabel>Sobrenome</FormLabel>
+                            <Input 
+                              value={lastName}
+                              onChange={(e) => setLastName(e.target.value)}
+                            />
+                          </FormControl>
+                        </Grid>
                         
                         <FormControl>
-                          <FormLabel>Senha Atual</FormLabel>
-                          <Input type="password" placeholder="Digite sua senha atual" />
+                          <FormLabel>Email</FormLabel>
+                          <Input 
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                          />
+                          <FormHelperText>Este email será usado para login e notificações</FormHelperText>
                         </FormControl>
                         
                         <FormControl>
+                          <FormLabel>Telefone</FormLabel>
+                          <Input 
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                          />
+                        </FormControl>
+                        
+                        <FormControl>
+                          <FormLabel>Localização</FormLabel>
+                          <Input 
+                            value={location}
+                            onChange={(e) => setLocation(e.target.value)}
+                            placeholder="Cidade, Estado"
+                          />
+                        </FormControl>
+                        
+                        <FormControl>
+                          <FormLabel>Biografia</FormLabel>
+                          <Textarea
+                            value={bio}
+                            onChange={(e) => setBio(e.target.value)}
+                            rows={4}
+                            placeholder="Uma breve descrição sobre você"
+                          />
+                        </FormControl>
+                        
+                        <Divider my={2} />
+                        
+                        <Heading size="sm" mb={2}>Redes Sociais</Heading>
+                        
+                        <FormControl>
+                          <InputGroup>
+                            <InputRightElement pointerEvents="none">
+                              <Icon as={FiGithub} color="gray.500" />
+                            </InputRightElement>
+                            <Input 
+                              value={githubUrl}
+                              onChange={(e) => setGithubUrl(e.target.value)}
+                              placeholder="URL do GitHub"
+                            />
+                          </InputGroup>
+                        </FormControl>
+                        
+                        <FormControl>
+                          <InputGroup>
+                            <InputRightElement pointerEvents="none">
+                              <Icon as={FiLinkedin} color="gray.500" />
+                            </InputRightElement>
+                            <Input 
+                              value={linkedinUrl}
+                              onChange={(e) => setLinkedinUrl(e.target.value)}
+                              placeholder="URL do LinkedIn"
+                            />
+                          </InputGroup>
+                        </FormControl>
+                        
+                        <FormControl>
+                          <InputGroup>
+                            <InputRightElement pointerEvents="none">
+                              <Icon as={FiTwitter} color="gray.500" />
+                            </InputRightElement>
+                            <Input 
+                              value={twitterUrl}
+                              onChange={(e) => setTwitterUrl(e.target.value)}
+                              placeholder="URL do Twitter"
+                            />
+                          </InputGroup>
+                        </FormControl>
+                        
+                        <Button 
+                          leftIcon={<FiSave />} 
+                          colorScheme="brand" 
+                          alignSelf="flex-end"
+                          onClick={handleSaveProfile}
+                        >
+                          Salvar Alterações
+                        </Button>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                </GridItem>
+                
+                <GridItem>
+                  <Card mb={6}>
+                    <CardHeader pb={0}>
+                      <Heading size="md">Foto de Perfil</Heading>
+                    </CardHeader>
+                    <CardBody>
+                      <VStack spacing={6}>
+                        <Flex 
+                          direction="column" 
+                          align="center" 
+                          justify="center"
+                          p={6}
+                        >
+                          <Avatar 
+                            size="2xl" 
+                            name={`${firstName} ${lastName}`} 
+                            src="https://bit.ly/broken-link"
+                            mb={4}
+                          >
+                            <AvatarBadge 
+                              bg="brand.500" 
+                              boxSize="1.2em" 
+                              borderWidth="3px"
+                              borderColor={useColorModeValue('white', 'gray.800')}
+                            >
+                              <Icon as={FiEdit2} color="white" boxSize={4} />
+                            </AvatarBadge>
+                          </Avatar>
+                          
+                          <Text 
+                            fontWeight="bold" 
+                            fontSize="xl"
+                            mb={1}
+                          >
+                            {firstName} {lastName}
+                          </Text>
+                          <Text color="gray.500" fontSize="sm" mb={4}>
+                            {location}
+                          </Text>
+                          
+                          <HStack spacing={4}>
+                            <Button leftIcon={<FiUpload />} colorScheme="brand">
+                              Carregar Foto
+                            </Button>
+                            <Button leftIcon={<FiTrash2 />} variant="outline">
+                              Remover
+                            </Button>
+                          </HStack>
+                          
+                          <Text fontSize="xs" color="gray.500" mt={3} textAlign="center">
+                            Formatos aceitos: JPG, PNG. Tamanho máximo: 1MB
+                          </Text>
+                        </Flex>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                  
+                  <Card>
+                    <CardHeader pb={0}>
+                      <Heading size="md">Conta e Dados</Heading>
+                    </CardHeader>
+                    <CardBody>
+                      <VStack spacing={4} align="stretch">
+                        <Box p={4} borderWidth="1px" borderRadius="md" borderColor="red.300">
+                          <Heading size="sm" color="red.500" mb={2}>Excluir Conta</Heading>
+                          <Text fontSize="sm" mb={3}>
+                            A exclusão da sua conta é permanente e irá remover todos os seus dados.
+                          </Text>
+                          <Button size="sm" colorScheme="red" leftIcon={<FiTrash2 />}>
+                            Excluir minha conta
+                          </Button>
+                        </Box>
+                        
+                        <Box p={4} borderWidth="1px" borderRadius="md">
+                          <Heading size="sm" mb={2}>Exportar Dados</Heading>
+                          <Text fontSize="sm" mb={3}>
+                            Baixe uma cópia de todos os seus dados e histórico de entrevistas.
+                          </Text>
+                          <Button size="sm" leftIcon={<FiDownload />} variant="outline">
+                            Exportar Dados
+                          </Button>
+                        </Box>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                </GridItem>
+              </Grid>
+            </TabPanel>
+            
+            {/* Painel de Segurança */}
+            <TabPanel p={0}>
+              <Grid templateColumns={{ base: "1fr", lg: "1fr 1fr" }} gap={6}>
+                <GridItem>
+                  <Card mb={{ base: 6, lg: 0 }}>
+                    <CardHeader pb={0}>
+                      <Heading size="md">Alterar Senha</Heading>
+                    </CardHeader>
+                    <CardBody>
+                      <VStack spacing={4} align="stretch">
+                        <FormControl isRequired>
+                          <FormLabel>Senha Atual</FormLabel>
+                          <InputGroup>
+                            <Input
+                              type={showPassword ? 'text' : 'password'}
+                              value={currentPassword}
+                              onChange={(e) => setCurrentPassword(e.target.value)}
+                            />
+                            <InputRightElement>
+                              <Icon
+                                as={showPassword ? FiEyeOff : FiEye}
+                                color="gray.500"
+                                cursor="pointer"
+                                onClick={() => setShowPassword(!showPassword)}
+                              />
+                            </InputRightElement>
+                          </InputGroup>
+                        </FormControl>
+                        
+                        <FormControl isRequired>
                           <FormLabel>Nova Senha</FormLabel>
-                          <Input type="password" placeholder="Digite sua nova senha" />
+                          <InputGroup>
+                            <Input
+                              type={showPassword ? 'text' : 'password'}
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                            />
+                            <InputRightElement>
+                              <Icon
+                                as={showPassword ? FiEyeOff : FiEye}
+                                color="gray.500"
+                                cursor="pointer"
+                                onClick={() => setShowPassword(!showPassword)}
+                              />
+                            </InputRightElement>
+                          </InputGroup>
                           <FormHelperText>
-                            A senha deve ter pelo menos 8 caracteres, incluindo números e caracteres especiais.
+                            Sua senha deve ter pelo menos 8 caracteres e incluir letras, números e caracteres especiais
                           </FormHelperText>
                         </FormControl>
                         
-                        <FormControl>
+                        <FormControl isRequired>
                           <FormLabel>Confirmar Nova Senha</FormLabel>
-                          <Input type="password" placeholder="Confirme sua nova senha" />
+                          <InputGroup>
+                            <Input
+                              type={showPassword ? 'text' : 'password'}
+                              value={confirmPassword}
+                              onChange={(e) => setConfirmPassword(e.target.value)}
+                            />
+                            <InputRightElement>
+                              <Icon
+                                as={showPassword ? FiEyeOff : FiEye}
+                                color="gray.500"
+                                cursor="pointer"
+                                onClick={() => setShowPassword(!showPassword)}
+                              />
+                            </InputRightElement>
+                          </InputGroup>
                         </FormControl>
                         
-                        <Divider />
-                        
-                        <Heading size="md">Verificação em Duas Etapas</Heading>
-                        
-                        <FormControl display="flex" alignItems="center">
-                          <Switch id="two-factor" colorScheme="brand" size="lg" />
-                          <FormLabel htmlFor="two-factor" mb="0" ml={3}>
-                            Ativar verificação em duas etapas
-                          </FormLabel>
-                        </FormControl>
-                        
-                        <Text color="gray.500" fontSize="sm">
-                          A verificação em duas etapas adiciona uma camada extra de segurança à sua conta.
-                          Além da sua senha, você precisará fornecer um código enviado para seu telefone.
-                        </Text>
-                        
-                        <Divider />
-                        
-                        <Heading size="md">Sessões Ativas</Heading>
-                        
-                        <Text>
-                          Você está logado em 2 dispositivos. Você pode encerrar todas as outras sessões,
-                          exceto a atual.
-                        </Text>
-                        
-                        <Button
-                          colorScheme="red"
-                          variant="outline"
-                          width="fit-content"
+                        <Button 
+                          leftIcon={<FiSave />} 
+                          colorScheme="brand" 
+                          mt={2}
+                          onClick={handleChangePassword}
+                          disabled={!currentPassword || !newPassword || !confirmPassword}
                         >
-                          Encerrar Outras Sessões
+                          Alterar Senha
                         </Button>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                </GridItem>
+                
+                <GridItem>
+                  <Card>
+                    <CardHeader pb={0}>
+                      <Heading size="md">Segurança da Conta</Heading>
+                    </CardHeader>
+                    <CardBody>
+                      <VStack spacing={4} align="stretch">
+                        <Box p={4} borderWidth="1px" borderRadius="md">
+                          <Flex justify="space-between" align="center" mb={2}>
+                            <Heading size="sm">Autenticação de dois fatores</Heading>
+                            <Switch colorScheme="brand" />
+                          </Flex>
+                          <Text fontSize="sm">
+                            Adicione uma camada extra de segurança à sua conta exigindo um código além da senha.
+                          </Text>
+                        </Box>
                         
-                        <Flex justify="flex-end">
-                          <Button
-                            type="submit"
-                            colorScheme="brand"
-                            isLoading={isLoading}
-                            leftIcon={<FiSave />}
-                          >
-                            Salvar Alterações
+                        <Box p={4} borderWidth="1px" borderRadius="md">
+                          <Flex justify="space-between" align="center" mb={2}>
+                            <Heading size="sm">Alertas de login</Heading>
+                            <Switch colorScheme="brand" defaultChecked />
+                          </Flex>
+                          <Text fontSize="sm">
+                            Receba alertas por email quando sua conta for acessada de um novo dispositivo ou local.
+                          </Text>
+                        </Box>
+                        
+                        <Box p={4} borderWidth="1px" borderRadius="md">
+                          <Flex justify="space-between" align="center" mb={2}>
+                            <Heading size="sm">Sessões ativas</Heading>
+                          </Flex>
+                          <Text fontSize="sm" mb={3}>
+                            Você tem 2 sessões ativas em diferentes dispositivos.
+                          </Text>
+                          <Button size="sm" variant="outline" leftIcon={<FiShield />}>
+                            Gerenciar Sessões
                           </Button>
-                        </Flex>
-                      </Stack>
-                    </form>
-                  </CardBody>
-                </Card>
-              </TabPanel>
-              
-              {/* Painel de Notificações */}
-              <TabPanel>
-                <Card bg={bg} borderWidth="1px" borderColor={borderColor} shadow="sm">
-                  <CardBody>
-                    <form onSubmit={handleNotificationsSubmit}>
-                      <Stack spacing={6}>
-                        <Heading size="md">Preferências de Notificação</Heading>
+                        </Box>
                         
-                        <Heading size="sm">Email</Heading>
+                        <Divider my={1} />
                         
-                        <FormControl display="flex" alignItems="center">
-                          <Switch id="email-interviews" colorScheme="brand" defaultChecked size="lg" />
-                          <FormLabel htmlFor="email-interviews" mb="0" ml={3}>
-                            Lembretes de entrevistas
-                          </FormLabel>
-                        </FormControl>
-                        
-                        <FormControl display="flex" alignItems="center">
-                          <Switch id="email-feedback" colorScheme="brand" defaultChecked size="lg" />
-                          <FormLabel htmlFor="email-feedback" mb="0" ml={3}>
-                            Relatórios de feedback
-                          </FormLabel>
-                        </FormControl>
-                        
-                        <FormControl display="flex" alignItems="center">
-                          <Switch id="email-tips" colorScheme="brand" defaultChecked size="lg" />
-                          <FormLabel htmlFor="email-tips" mb="0" ml={3}>
-                            Dicas de preparação
-                          </FormLabel>
-                        </FormControl>
-                        
-                        <FormControl display="flex" alignItems="center">
-                          <Switch id="email-marketing" colorScheme="brand" size="lg" />
-                          <FormLabel htmlFor="email-marketing" mb="0" ml={3}>
-                            Novidades e promoções
-                          </FormLabel>
-                        </FormControl>
-                        
-                        <Divider />
-                        
-                        <Heading size="sm">Aplicação</Heading>
-                        
-                        <FormControl display="flex" alignItems="center">
-                          <Switch id="app-interviews" colorScheme="brand" defaultChecked size="lg" />
-                          <FormLabel htmlFor="app-interviews" mb="0" ml={3}>
-                            Lembretes de entrevistas
-                          </FormLabel>
-                        </FormControl>
-                        
-                        <FormControl display="flex" alignItems="center">
-                          <Switch id="app-feedback" colorScheme="brand" defaultChecked size="lg" />
-                          <FormLabel htmlFor="app-feedback" mb="0" ml={3}>
-                            Notificações de feedback
-                          </FormLabel>
-                        </FormControl>
-                        
-                        <FormControl display="flex" alignItems="center">
-                          <Switch id="app-messages" colorScheme="brand" defaultChecked size="lg" />
-                          <FormLabel htmlFor="app-messages" mb="0" ml={3}>
-                            Mensagens
-                          </FormLabel>
-                        </FormControl>
-                        
-                        <Flex justify="flex-end">
-                          <Button
-                            type="submit"
-                            colorScheme="brand"
-                            isLoading={isLoading}
-                            leftIcon={<FiSave />}
-                          >
-                            Salvar Alterações
-                          </Button>
-                        </Flex>
-                      </Stack>
-                    </form>
-                  </CardBody>
-                </Card>
-              </TabPanel>
-              
-              {/* Painel de Privacidade */}
-              <TabPanel>
-                <Card bg={bg} borderWidth="1px" borderColor={borderColor} shadow="sm">
-                  <CardBody>
-                    <Stack spacing={6}>
-                      <Heading size="md">Configurações de Privacidade</Heading>
-                      
-                      <FormControl>
-                        <FormLabel>Visibilidade do Perfil</FormLabel>
-                        <Select defaultValue="registered">
-                          <option value="public">Público - Visível para todos</option>
-                          <option value="registered">Registrados - Apenas usuários registrados</option>
-                          <option value="connections">Conexões - Apenas minhas conexões</option>
-                          <option value="private">Privado - Apenas eu</option>
-                        </Select>
-                      </FormControl>
-                      
-                      <FormControl display="flex" alignItems="center">
-                        <Switch id="data-collection" colorScheme="brand" defaultChecked size="lg" />
-                        <FormLabel htmlFor="data-collection" mb="0" ml={3}>
-                          Coleta de dados para melhorar a experiência
-                        </FormLabel>
-                      </FormControl>
-                      
+                        <Text fontSize="sm" color="gray.500">
+                          Último login: 12 de setembro de 2023, 15:32
+                        </Text>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                </GridItem>
+              </Grid>
+            </TabPanel>
+            
+            {/* Painel de Notificações */}
+            <TabPanel p={0}>
+              <Card>
+                <CardHeader pb={0}>
+                  <Heading size="md">Preferências de Notificação</Heading>
+                </CardHeader>
+                <CardBody>
+                  <VStack spacing={6} align="stretch">
+                    <Box>
+                      <Flex justify="space-between" align="center" mb={3}>
+                        <Heading size="sm">Email de Notificações</Heading>
+                        <Switch 
+                          colorScheme="brand" 
+                          isChecked={emailNotifications}
+                          onChange={() => setEmailNotifications(!emailNotifications)}
+                        />
+                      </Flex>
                       <Text color="gray.500" fontSize="sm">
-                        Permitimos que coletemos dados sobre seu uso para aprimorar nossos algoritmos de IA e melhorar sua experiência.
-                        Seus dados são sempre tratados com segurança e nunca compartilhados com terceiros.
+                        Permitir envio de notificações para {email}
                       </Text>
+                    </Box>
+                    
+                    <Divider />
+                    
+                    <Box>
+                      <Heading size="sm" mb={4}>Tipos de Notificação</Heading>
+                      <Stack spacing={4}>
+                        <Flex justify="space-between" align="center">
+                          <Box>
+                            <Text fontWeight="medium">Lembretes de Prática</Text>
+                            <Text fontSize="sm" color="gray.500">
+                              Lembretes para sessões de prática agendadas
+                            </Text>
+                          </Box>
+                          <Switch 
+                            colorScheme="brand" 
+                            isChecked={practiceReminders}
+                            onChange={() => setPracticeReminders(!practiceReminders)}
+                            isDisabled={!emailNotifications}
+                          />
+                        </Flex>
+                        
+                        <Flex justify="space-between" align="center">
+                          <Box>
+                            <Text fontWeight="medium">Entrevistas Agendadas</Text>
+                            <Text fontSize="sm" color="gray.500">
+                              Notificações sobre entrevistas próximas
+                            </Text>
+                          </Box>
+                          <Switch 
+                            colorScheme="brand" 
+                            isChecked={interviewNotifications}
+                            onChange={() => setInterviewNotifications(!interviewNotifications)}
+                            isDisabled={!emailNotifications}
+                          />
+                        </Flex>
+                        
+                        <Flex justify="space-between" align="center">
+                          <Box>
+                            <Text fontWeight="medium">Feedback e Análises</Text>
+                            <Text fontSize="sm" color="gray.500">
+                              Resumos e análises após sessões de prática
+                            </Text>
+                          </Box>
+                          <Switch 
+                            colorScheme="brand" 
+                            isChecked={feedbackNotifications}
+                            onChange={() => setFeedbackNotifications(!feedbackNotifications)}
+                            isDisabled={!emailNotifications}
+                          />
+                        </Flex>
+                        
+                        <Flex justify="space-between" align="center">
+                          <Box>
+                            <Text fontWeight="medium">Emails de Marketing</Text>
+                            <Text fontSize="sm" color="gray.500">
+                              Novidades, dicas e ofertas sobre a plataforma
+                            </Text>
+                          </Box>
+                          <Switch 
+                            colorScheme="brand" 
+                            isChecked={marketingEmails}
+                            onChange={() => setMarketingEmails(!marketingEmails)}
+                            isDisabled={!emailNotifications}
+                          />
+                        </Flex>
+                      </Stack>
+                    </Box>
+                    
+                    <Divider />
+                    
+                    <Button 
+                      leftIcon={<FiSave />} 
+                      colorScheme="brand" 
+                      alignSelf="flex-end"
+                      onClick={handleSaveNotifications}
+                    >
+                      Salvar Preferências
+                    </Button>
+                  </VStack>
+                </CardBody>
+              </Card>
+            </TabPanel>
+            
+            {/* Painel de Preferências */}
+            <TabPanel p={0}>
+              <Card>
+                <CardHeader pb={0}>
+                  <Heading size="md">Preferências da Aplicação</Heading>
+                </CardHeader>
+                <CardBody>
+                  <VStack spacing={6} align="stretch">
+                    <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={6}>
+                      <GridItem>
+                        <FormControl>
+                          <FormLabel>Idioma</FormLabel>
+                          <Select 
+                            value={language}
+                            onChange={(e) => setLanguage(e.target.value)}
+                          >
+                            <option value="pt-BR">Português (Brasil)</option>
+                            <option value="en-US">English (US)</option>
+                            <option value="es">Español</option>
+                          </Select>
+                        </FormControl>
+                      </GridItem>
                       
-                      <FormControl display="flex" alignItems="center">
-                        <Switch id="show-progress" colorScheme="brand" defaultChecked size="lg" />
-                        <FormLabel htmlFor="show-progress" mb="0" ml={3}>
-                          Mostrar meu progresso para conexões
-                        </FormLabel>
-                      </FormControl>
-                      
-                      <Divider />
-                      
-                      <Heading size="md" color="red.500">Zona de Perigo</Heading>
-                      
-                      <Text>
-                        Esta ação é irreversível e removerá permanentemente todos os seus dados, incluindo histórico de entrevistas,
-                        feedback e configurações pessoais.
-                      </Text>
-                      
-                      <Button
-                        colorScheme="red"
-                        variant="outline"
-                        width="fit-content"
-                      >
-                        Excluir Minha Conta
-                      </Button>
-                    </Stack>
-                  </CardBody>
-                </Card>
-              </TabPanel>
-            </TabPanels>
-          </Tabs>
-        </Box>
-      </DashboardLayout>
-    </>
+                      <GridItem>
+                        <FormControl>
+                          <FormLabel>Modo de Cores</FormLabel>
+                          <Select 
+                            value={colorMode}
+                            onChange={(e) => setColorMode(e.target.value)}
+                          >
+                            <option value="light">Claro</option>
+                            <option value="dark">Escuro</option>
+                            <option value="system">Sistema (Automático)</option>
+                          </Select>
+                        </FormControl>
+                      </GridItem>
+                    </Grid>
+                    
+                    <Divider />
+                    
+                    <Box>
+                      <Heading size="sm" mb={4}>Interface e Comportamento</Heading>
+                      <Stack spacing={4}>
+                        <Flex justify="space-between" align="center">
+                          <Box>
+                            <Text fontWeight="medium">Mostrar Dicas</Text>
+                            <Text fontSize="sm" color="gray.500">
+                              Exibir dicas e sugestões ao usar a plataforma
+                            </Text>
+                          </Box>
+                          <Switch 
+                            colorScheme="brand" 
+                            isChecked={showTips}
+                            onChange={() => setShowTips(!showTips)}
+                          />
+                        </Flex>
+                        
+                        <Flex justify="space-between" align="center">
+                          <Box>
+                            <Text fontWeight="medium">Transcrição de Áudio</Text>
+                            <Text fontSize="sm" color="gray.500">
+                              Mostrar transcrição em tempo real durante entrevistas
+                            </Text>
+                          </Box>
+                          <Switch 
+                            colorScheme="brand" 
+                            isChecked={audioTranscription}
+                            onChange={() => setAudioTranscription(!audioTranscription)}
+                          />
+                        </Flex>
+                        
+                        <Flex justify="space-between" align="center">
+                          <Box>
+                            <Text fontWeight="medium">Salvamento Automático</Text>
+                            <Text fontSize="sm" color="gray.500">
+                              Salvar automaticamente os rascunhos de anotações e respostas
+                            </Text>
+                          </Box>
+                          <Switch 
+                            colorScheme="brand" 
+                            isChecked={autoSave}
+                            onChange={() => setAutoSave(!autoSave)}
+                          />
+                        </Flex>
+                      </Stack>
+                    </Box>
+                    
+                    <Divider />
+                    
+                    <Box>
+                      <Heading size="sm" mb={4}>Acessibilidade</Heading>
+                      <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={6}>
+                        <GridItem>
+                          <FormControl>
+                            <FormLabel>Tamanho da Fonte</FormLabel>
+                            <Select defaultValue="medium">
+                              <option value="small">Pequeno</option>
+                              <option value="medium">Médio</option>
+                              <option value="large">Grande</option>
+                            </Select>
+                          </FormControl>
+                        </GridItem>
+                        
+                        <GridItem>
+                          <FormControl>
+                            <FormLabel>Contraste</FormLabel>
+                            <Select defaultValue="normal">
+                              <option value="normal">Normal</option>
+                              <option value="high">Alto</option>
+                            </Select>
+                          </FormControl>
+                        </GridItem>
+                      </Grid>
+                    </Box>
+                    
+                    <Button 
+                      leftIcon={<FiSave />} 
+                      colorScheme="brand" 
+                      alignSelf="flex-end"
+                      onClick={handleSavePreferences}
+                    >
+                      Salvar Preferências
+                    </Button>
+                  </VStack>
+                </CardBody>
+              </Card>
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
+      </Box>
+    </DashboardLayout>
   );
 } 
