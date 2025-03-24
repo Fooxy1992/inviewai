@@ -1,14 +1,8 @@
 {
-  "version": 2,
-  "buildCommand": "cd webapp && npm run build",
-  "outputDirectory": "webapp/.next",
   "framework": "nextjs",
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": "/webapp/$1"
-    }
-  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "devCommand": "npm run dev",
   "headers": [
     {
       "source": "/(.*)",
