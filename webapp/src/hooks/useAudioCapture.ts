@@ -88,6 +88,9 @@ export function useAudioCapture({
     try {
       setIsProcessing(true);
       
+      // Log para debug do formato e tamanho do áudio
+      console.log(`Processando áudio: tipo=${audioBlob.type}, tamanho=${audioBlob.size} bytes`);
+      
       // Transcrever o áudio
       const transcription = await openaiService.transcribeAudio(audioBlob);
       
@@ -124,6 +127,12 @@ export function useAudioCapture({
       }
     } catch (err) {
       console.error('Erro ao processar áudio:', err);
+      // Mensagem de erro mais detalhada
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Erro desconhecido ao processar áudio');
+      }
     } finally {
       setIsProcessing(false);
     }

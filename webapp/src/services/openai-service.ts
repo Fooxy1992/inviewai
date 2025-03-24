@@ -1,7 +1,11 @@
 import axios from 'axios';
 
 // Configura a chave da API (em uma aplicação real, isso deveria ser armazenado em variáveis de ambiente)
-const OPENAI_API_KEY = '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';
+const OPENAI_API_KEY = process.env.NEXT_PUBLIC_OPENAI_API_KEY || '';
+// Verificar se a chave da API foi fornecida
+if (!OPENAI_API_KEY) {
+  console.warn('Chave da API OpenAI não configurada. Configure a variável de ambiente NEXT_PUBLIC_OPENAI_API_KEY');
+}
 
 // Configura o cliente HTTP com o header de autorização
 const openaiClient = axios.create({
@@ -43,6 +47,16 @@ export const transcribeAudio = async (audioBlob: Blob): Promise<Transcription> =
     formData.append('model', 'whisper-1');
     formData.append('language', 'pt');
     
+    // Verificar se a API key está configurada
+    if (!OPENAI_API_KEY) {
+      throw new Error('Chave da API OpenAI não configurada');
+    }
+
+    // Verificar se o tamanho do blob de áudio é válido
+    if (audioBlob.size < 1024) { // Menos de 1KB é provavelmente muito pequeno
+      throw new Error('Arquivo de áudio muito pequeno para transcrição');
+    }
+    
     // Enviar a requisição para a API de transcrição
     const response = await openaiClient.post('/audio/transcriptions', formData, {
       headers: {
@@ -50,12 +64,39 @@ export const transcribeAudio = async (audioBlob: Blob): Promise<Transcription> =
       },
     });
     
+    // Verificar se a resposta contém texto transcrito
+    if (!response.data.text) {
+      throw new Error('A API retornou uma resposta vazia');
+    }
+    
     return {
       text: response.data.text,
     };
   } catch (error) {
     console.error('Erro ao transcrever áudio:', error);
-    throw new Error('Falha ao transcrever o áudio');
+    
+    // Oferecer mensagens de erro mais específicas
+    if (axios.isAxiosError(error)) {
+      if (error.response) {
+        // A API respondeu com um status de erro
+        const status = error.response.status;
+        if (status === 401) {
+          throw new Error('Falha na autenticação com a API OpenAI. Verifique sua chave API.');
+        } else if (status === 400) {
+          throw new Error('Formato de áudio inválido ou requisição mal formada.');
+        } else if (status === 429) {
+          throw new Error('Limite de requisições excedido na API OpenAI.');
+        } else {
+          throw new Error(`Erro na API OpenAI: ${error.response.data?.error?.message || 'Erro desconhecido'}`);
+        }
+      } else if (error.request) {
+        // A requisição foi feita, mas não houve resposta
+        throw new Error('Sem resposta da API OpenAI. Verifique sua conexão com a internet.');
+      }
+    }
+    
+    // Erro genérico se nenhum dos casos acima for aplicável
+    throw new Error('Falha ao transcrever o áudio: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
   }
 };
 
