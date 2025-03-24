@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InViewAI Overlay</title>
+  <link rel="stylesheet" href="overlay.css">
+</head>
+<body>
+  <div id="inviewai-overlay" class="inviewai-overlay bottom-right">
+    <!-- Cabeçalho -->
+    <div class="inviewai-header">
+      <div class="inviewai-logo">
+        <span class="logo-icon">✨</span>
+        <span class="logo-text">InViewAI</span>
+      </div>
+      <div class="inviewai-controls">
+        <button id="inviewai-settings-btn" class="inviewai-btn" title="Configurações">
+          <span class="icon">⚙️</span>
+        </button>
+        <button id="inviewai-minimize-btn" class="inviewai-btn" title="Minimizar">
+          <span class="icon">−</span>
+        </button>
+        <button id="inviewai-close-btn" class="inviewai-btn" title="Fechar">
+          <span class="icon">×</span>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Conteúdo principal -->
+    <div class="inviewai-content">
+      <!-- Indicador de conexão -->
+      <div id="inviewai-connecting" class="inviewai-connecting">
+        <div class="inviewai-spinner"></div>
+        <span>Conectando ao serviço...</span>
+      </div>
+      
+      <!-- Painel de login -->
+      <div id="inviewai-login-panel" class="inviewai-login-panel">
+        <h2>Entrar na sua conta</h2>
+        <p class="login-intro">Faça login para usar a assistência de entrevista em tempo real</p>
+        
+        <div class="form-group">
+          <label for="inviewai-email">Email</label>
+          <input type="email" id="inviewai-email" placeholder="seu@email.com">
+        </div>
+        
+        <div class="form-group">
+          <label for="inviewai-password">Senha</label>
+          <input type="password" id="inviewai-password" placeholder="Sua senha">
+        </div>
+        
+        <div id="inviewai-login-error" class="login-error"></div>
+        
+        <button id="inviewai-login-btn" class="inviewai-btn-primary">Entrar</button>
+        
+        <div class="login-footer">
+          <a href="https://inviewai.com/signup" target="_blank">Criar conta</a>
+          <span>|</span>
+          <a href="https://inviewai.com/reset-password" target="_blank">Esqueci a senha</a>
+        </div>
+      </div>
+      
+      <!-- Área de transcrição -->
+      <div id="inviewai-transcription" class="inviewai-transcription"></div>
+      
+      <!-- Área de sugestão -->
+      <div id="inviewai-suggestion" class="inviewai-suggestion"></div>
+      
+      <!-- Lista de feedback -->
+      <div class="inviewai-feedback">
+        <h3>Feedback em tempo real</h3>
+        <div id="inviewai-feedback-list" class="inviewai-feedback-list"></div>
+      </div>
+    </div>
+    
+    <!-- Rodapé -->
+    <div class="inviewai-footer">
+      <button id="inviewai-pause-btn" class="inviewai-btn-action">
+        Iniciar feedback
+      </button>
+      <button id="inviewai-config-btn" class="inviewai-btn-sm">
+        Opções
+      </button>
+    </div>
+    
+    <!-- Painel de configurações -->
+    <div id="inviewai-settings-panel" class="inviewai-settings-panel hidden">
+      <h3>Configurações</h3>
+      
+      <div class="settings-section">
+        <h4>Tipos de feedback</h4>
+        <div class="settings-option">
+          <input type="checkbox" id="setting-realtime" checked>
+          <label for="setting-realtime">Feedback em tempo real</label>
+        </div>
+        <div class="settings-option">
+          <input type="checkbox" id="setting-content-suggestions" checked>
+          <label for="setting-content-suggestions">Sugestões de conteúdo</label>
+        </div>
+        <div class="settings-option">
+          <input type="checkbox" id="setting-nonverbal" checked>
+          <label for="setting-nonverbal">Comunicação não-verbal</label>
+        </div>
+        <div class="settings-option">
+          <input type="checkbox" id="setting-filler-words" checked>
+          <label for="setting-filler-words">Detecção de "muletas linguísticas"</label>
+        </div>
+      </div>
+      
+      <div class="settings-section">
+        <h4>Formato de feedback</h4>
+        <div class="settings-option">
+          <input type="radio" name="feedback-format" id="format-icons-text" checked>
+          <label for="format-icons-text">Ícones e texto</label>
+        </div>
+        <div class="settings-option">
+          <input type="radio" name="feedback-format" id="format-text-only">
+          <label for="format-text-only">Apenas texto</label>
+        </div>
+        <div class="settings-option">
+          <input type="radio" name="feedback-format" id="format-icons-only">
+          <label for="format-icons-only">Apenas ícones</label>
+        </div>
+      </div>
+      
+      <div class="settings-section">
+        <h4>Posição da sobreposição</h4>
+        <div class="settings-option">
+          <input type="radio" name="overlay-position" id="position-bottom-right" checked>
+          <label for="position-bottom-right">Inferior direito</label>
+        </div>
+        <div class="settings-option">
+          <input type="radio" name="overlay-position" id="position-bottom-left">
+          <label for="position-bottom-left">Inferior esquerdo</label>
+        </div>
+        <div class="settings-option">
+          <input type="radio" name="overlay-position" id="position-top-right">
+          <label for="position-top-right">Superior direito</label>
+        </div>
+        <div class="settings-option">
+          <input type="radio" name="overlay-position" id="position-top-left">
+          <label for="position-top-left">Superior esquerdo</label>
+        </div>
+        <div class="settings-option">
+          <input type="radio" name="overlay-position" id="position-floating">
+          <label for="position-floating">Flutuante (arrastar)</label>
+        </div>
+      </div>
+      
+      <div class="settings-actions">
+        <button id="settings-save-btn" class="inviewai-btn-primary">Salvar</button>
+        <button id="settings-restore-btn" class="inviewai-btn-secondary">Restaurar padrões</button>
+      </div>
+    </div>
+  </div>
+  
+  <script src="overlay.js"></script>
+</body>
+</html> 

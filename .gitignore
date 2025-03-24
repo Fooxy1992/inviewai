@@ -1,0 +1,55 @@
+# Dependências
+node_modules/
+.pnp/
+.pnp.js
+
+# Produção
+/build/
+/out/
+.next/
+dist/
+
+# Testes
+/coverage/
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Variáveis de ambiente e configurações locais
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs
+*.log
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Chaves de acesso e configurações secretas
+*.pem
+*.key
+firebase-admin-sdk.json
+firebase.json
+
+# Arquivos específicos
+extension.zip
+
+# Firebase
+.firebase/
+firebase-debug.log
+
+# Vercel
+.vercel
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo 

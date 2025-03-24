@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Regras básicas que permitem acesso autenticado aos usuários
+    match /users/{userId} {
+      // Permitir leitura e gravação apenas para o próprio usuário
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Regras para transcrições de entrevistas
+    match /interviews/{interviewId} {
+      // Apenas o proprietário da entrevista pode lê-la e editá-la
+      allow read, write: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      
+      // Transcrições dentro de uma entrevista
+      match /transcriptions/{transcriptionId} {
+        allow read, write: if request.auth != null && 
+          get(/databases/$(database)/documents/interviews/$(interviewId)).data.userId == request.auth.uid;
+      }
+    }
+    
+    // Configurações do usuário
+    match /settings/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Negar todos os outros acessos por padrão
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+} 

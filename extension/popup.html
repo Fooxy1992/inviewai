@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InViewAI</title>
+  <style>
+    :root {
+      --primary-color: #4a6cf7;
+      --secondary-color: #6c757d;
+      --success-color: #28a745;
+      --danger-color: #dc3545;
+      --warning-color: #ffc107;
+      --info-color: #17a2b8;
+      --light-color: #f8f9fa;
+      --dark-color: #343a40;
+      --white-color: #ffffff;
+      --border-radius: 8px;
+      --box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      --transition: all 0.3s ease;
+      --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: var(--font-family);
+      width: 320px;
+      min-height: 300px;
+      overflow-x: hidden;
+      color: var(--dark-color);
+      background-color: var(--white-color);
+    }
+    
+    .container {
+      padding: 16px;
+    }
+    
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+      margin-bottom: 16px;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+    }
+    
+    .logo-text {
+      width: 32px;
+      height: 32px;
+      margin-right: 8px;
+      background-color: var(--primary-color);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-weight: bold;
+    }
+    
+    .logo h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--primary-color);
+    }
+    
+    .user-info {
+      font-size: 14px;
+      color: var(--secondary-color);
+    }
+    
+    .user-info a {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+    
+    .status-section {
+      background-color: var(--light-color);
+      border-radius: var(--border-radius);
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    
+    .status-dot.active {
+      background-color: var(--success-color);
+    }
+    
+    .status-dot.inactive {
+      background-color: var(--secondary-color);
+    }
+    
+    .status-text {
+      font-size: 14px;
+    }
+    
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 16px;
+      border-radius: var(--border-radius);
+      border: none;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    
+    .btn-primary {
+      background-color: var(--primary-color);
+      color: var(--white-color);
+    }
+    
+    .btn-primary:hover {
+      background-color: #3a5bd9;
+    }
+    
+    .btn-secondary {
+      background-color: var(--white-color);
+      color: var(--primary-color);
+      border: 1px solid var(--primary-color);
+    }
+    
+    .btn-secondary:hover {
+      background-color: rgba(74, 108, 247, 0.1);
+    }
+    
+    .btn-disabled {
+      background-color: var(--secondary-color);
+      color: var(--white-color);
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+    
+    .btn-icon {
+      margin-right: 8px;
+    }
+    
+    .quick-links {
+      margin-top: 16px;
+    }
+    
+    .quick-links h3 {
+      font-size: 14px;
+      margin-bottom: 8px;
+      color: var(--secondary-color);
+    }
+    
+    .links-list {
+      list-style: none;
+    }
+    
+    .links-list li {
+      margin-bottom: 8px;
+    }
+    
+    .links-list a {
+      display: flex;
+      align-items: center;
+      color: var(--primary-color);
+      text-decoration: none;
+      font-size: 14px;
+      transition: var(--transition);
+    }
+    
+    .links-list a:hover {
+      text-decoration: underline;
+    }
+    
+    .link-icon {
+      margin-right: 8px;
+    }
+    
+    footer {
+      font-size: 12px;
+      color: var(--secondary-color);
+      text-align: center;
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .version {
+      font-size: 11px;
+      margin-top: 4px;
+    }
+    
+    .not-supported {
+      display: none;
+      text-align: center;
+      padding: 16px;
+    }
+    
+    .not-supported img {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 16px;
+    }
+    
+    .not-supported h2 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      color: var(--secondary-color);
+    }
+    
+    .not-supported p {
+      font-size: 14px;
+      margin-bottom: 16px;
+      color: var(--secondary-color);
+    }
+  </style>
+</head>
+<body>
+  <!-- Conteúdo principal (visível quando estamos em uma plataforma suportada) -->
+  <div class="container" id="supported-content">
+    <header>
+      <div class="logo">
+        <div class="logo-text">AI</div>
+        <h1>InViewAI</h1>
+      </div>
+      <div class="user-info">
+        <a href="#" id="profile-link">Meu Perfil</a>
+      </div>
+    </header>
+    
+    <div class="status-section">
+      <div class="status-indicator">
+        <div class="status-dot active" id="platform-status-dot"></div>
+        <div class="status-text" id="platform-status-text">Plataforma suportada detectada</div>
+      </div>
+      <div class="status-indicator">
+        <div class="status-dot inactive" id="authentication-status-dot"></div>
+        <div class="status-text" id="authentication-status-text">Autenticação necessária</div>
+      </div>
+    </div>
+    
+    <div class="action-buttons">
+      <button class="btn btn-primary" id="start-interview-btn">
+        <span class="btn-icon">▶</span> Iniciar Assistente
+      </button>
+      <button class="btn btn-secondary" id="login-btn">
+        <span class="btn-icon">🔑</span> Fazer Login
+      </button>
+    </div>
+    
+    <div class="quick-links">
+      <h3>Links Rápidos</h3>
+      <ul class="links-list">
+        <li>
+          <a href="#" id="dashboard-link">
+            <span class="link-icon">📊</span> Dashboard
+          </a>
+        </li>
+        <li>
+          <a href="#" id="practice-link">
+            <span class="link-icon">🎯</span> Praticar Entrevista
+          </a>
+        </li>
+        <li>
+          <a href="#" id="settings-link">
+            <span class="link-icon">⚙️</span> Configurações
+          </a>
+        </li>
+        <li>
+          <a href="#" id="help-link">
+            <span class="link-icon">❓</span> Ajuda e Suporte
+          </a>
+        </li>
+      </ul>
+    </div>
+    
+    <footer>
+      <div>&copy; 2023 InViewAI. Todos os direitos reservados.</div>
+      <div class="version">Versão 1.0.0</div>
+    </footer>
+  </div>
+  
+  <!-- Conteúdo para plataformas não suportadas -->
+  <div class="not-supported" id="unsupported-content">
+    <h2>Plataforma Não Suportada</h2>
+    <p>O InViewAI atualmente funciona apenas em Google Meet, Microsoft Teams e Zoom.</p>
+    <button class="btn btn-secondary" id="open-supported-btn">
+      Abrir uma plataforma suportada
+    </button>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html> 
