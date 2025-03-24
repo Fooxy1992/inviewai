@@ -1,111 +1,175 @@
+import { firestore } from '@/lib/firebase';
 import { 
-  collection, 
   doc, 
   getDoc, 
   setDoc, 
   updateDoc, 
-  serverTimestamp, 
-  Timestamp,
-  query,
-  where,
-  getDocs
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  serverTimestamp 
 } from 'firebase/firestore';
-import { db } from '@/config/firebase';
-import { Usuario, Configuracoes } from '@/models/types';
+import { Usuario } from '@/models/types';
 
 const COLECAO_USUARIOS = 'usuarios';
 
 /**
- * Cria um novo usuário no Firestore
+ * Obtém os dados de um usuário por ID
+ * @param userId ID do usuário
+ * @returns Dados do usuário
  */
-export const criarUsuario = async (uid: string, email: string, nome?: string, fotoPerfil?: string): Promise<void> => {
-  const usuarioRef = doc(db, COLECAO_USUARIOS, uid);
-  const novoUsuario: Usuario = {
-    id: uid,
-    email,
-    nome: nome || '',
-    fotoPerfil: fotoPerfil || '',
-    dataCriacao: Timestamp.now(),
-    configuracoes: {
-      temaEscuro: false,
-      idiomaPreferido: 'pt-BR',
-      notificacoesAtivadas: true
+export const obterUsuarioPorId = async (userId: string): Promise<Usuario> => {
+  try {
+    const docRef = doc(firestore, COLECAO_USUARIOS, userId);
+    const docSnap = await getDoc(docRef);
+
+    if (!docSnap.exists()) {
+      throw new Error(`Usuário com ID ${userId} não encontrado`);
     }
-  };
-  
-  await setDoc(usuarioRef, novoUsuario);
-};
 
-/**
- * Obtém um usuário pelo ID
- */
-export const obterUsuarioPorId = async (uid: string): Promise<Usuario | null> => {
-  const usuarioRef = doc(db, COLECAO_USUARIOS, uid);
-  const usuarioDoc = await getDoc(usuarioRef);
-  
-  if (usuarioDoc.exists()) {
-    return usuarioDoc.data() as Usuario;
+    return { id: docSnap.id, ...docSnap.data() } as Usuario;
+  } catch (error) {
+    console.error('Erro ao obter usuário por ID:', error);
+    throw error;
   }
-  
-  return null;
 };
 
 /**
- * Busca usuário por email
+ * Obtém usuário por e-mail
+ * @param email E-mail do usuário
+ * @returns Dados do usuário ou null se não encontrado
  */
-export const buscarUsuarioPorEmail = async (email: string): Promise<Usuario | null> => {
-  const usuariosRef = collection(db, COLECAO_USUARIOS);
-  const q = query(usuariosRef, where('email', '==', email));
-  const querySnapshot = await getDocs(q);
-  
-  if (!querySnapshot.empty) {
-    const doc = querySnapshot.docs[0];
-    return { ...doc.data(), id: doc.id } as Usuario;
+export const obterUsuarioPorEmail = async (email: string): Promise<Usuario | null> => {
+  try {
+    const usuariosRef = collection(firestore, COLECAO_USUARIOS);
+    const q = query(usuariosRef, where('email', '==', email));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      return null;
+    }
+
+    const docSnap = querySnapshot.docs[0];
+    return { id: docSnap.id, ...docSnap.data() } as Usuario;
+  } catch (error) {
+    console.error('Erro ao obter usuário por e-mail:', error);
+    throw error;
   }
-  
-  return null;
 };
 
 /**
- * Atualiza o último login do usuário
+ * Cria um novo usuário ou atualiza um existente após autenticação
+ * @param userId ID do usuário
+ * @param userData Dados do usuário
+ * @returns ID do usuário
  */
-export const atualizarUltimoLogin = async (uid: string): Promise<void> => {
-  const usuarioRef = doc(db, COLECAO_USUARIOS, uid);
-  await updateDoc(usuarioRef, {
-    ultimoLogin: serverTimestamp()
-  });
+export const criarOuAtualizarUsuario = async (
+  userId: string, 
+  userData: { 
+    nome: string; 
+    email: string; 
+    imagemUrl?: string;
+  }
+): Promise<string> => {
+  try {
+    const docRef = doc(firestore, COLECAO_USUARIOS, userId);
+    const docSnap = await getDoc(docRef);
+    
+    if (!docSnap.exists()) {
+      // Criar novo usuário
+      const novoUsuario: Omit<Usuario, 'id'> = {
+        nome: userData.nome,
+        email: userData.email,
+        imagemUrl: userData.imagemUrl || null,
+        dataCriacao: serverTimestamp(),
+        dataAtualizacao: serverTimestamp(),
+        configuracoes: {
+          temaEscuro: false,
+          receberNotificacoes: true,
+          idioma: 'pt-BR',
+          modeloIA: 'gpt-3.5-turbo'
+        }
+      };
+      
+      await setDoc(docRef, novoUsuario);
+      console.log(`Novo usuário criado: ${userId}`);
+    } else {
+      // Atualizar apenas dados básicos se usuário já existe
+      await updateDoc(docRef, {
+        nome: userData.nome,
+        email: userData.email,
+        imagemUrl: userData.imagemUrl || docSnap.data().imagemUrl,
+        dataAtualizacao: serverTimestamp()
+      });
+      console.log(`Usuário atualizado: ${userId}`);
+    }
+    
+    return userId;
+  } catch (error) {
+    console.error('Erro ao criar ou atualizar usuário:', error);
+    throw error;
+  }
 };
 
 /**
- * Atualiza o perfil do usuário
+ * Atualiza dados de um usuário existente
+ * @param userId ID do usuário
+ * @param dados Dados a serem atualizados
  */
-export const atualizarPerfilUsuario = async (
-  uid: string, 
-  dados: { nome?: string, fotoPerfil?: string }
+export const atualizarUsuario = async (
+  userId: string, 
+  dados: { 
+    nome?: string; 
+    imagemUrl?: string;
+  }
 ): Promise<void> => {
-  const usuarioRef = doc(db, COLECAO_USUARIOS, uid);
-  await updateDoc(usuarioRef, { ...dados });
+  try {
+    const docRef = doc(firestore, COLECAO_USUARIOS, userId);
+    const dadosAtualizacao = {
+      ...dados,
+      dataAtualizacao: serverTimestamp()
+    };
+    
+    await updateDoc(docRef, dadosAtualizacao);
+    console.log(`Dados do usuário ${userId} atualizados`);
+  } catch (error) {
+    console.error('Erro ao atualizar dados do usuário:', error);
+    throw error;
+  }
 };
 
 /**
- * Atualiza as configurações do usuário
+ * Atualiza as configurações de um usuário
+ * @param userId ID do usuário
+ * @param configuracoes Configurações a serem atualizadas
  */
 export const atualizarConfiguracoesUsuario = async (
-  uid: string,
-  configuracoes: Partial<Configuracoes>
+  userId: string, 
+  configuracoes: Partial<Usuario['configuracoes']>
 ): Promise<void> => {
-  const usuarioRef = doc(db, COLECAO_USUARIOS, uid);
-  const usuarioDoc = await getDoc(usuarioRef);
-  
-  if (usuarioDoc.exists()) {
-    const dadosUsuario = usuarioDoc.data() as Usuario;
-    const configAtualizadas = {
-      ...dadosUsuario.configuracoes,
+  try {
+    const docRef = doc(firestore, COLECAO_USUARIOS, userId);
+    const userData = await getDoc(docRef);
+    
+    if (!userData.exists()) {
+      throw new Error('Usuário não encontrado');
+    }
+    
+    const configuracoesAtuais = userData.data().configuracoes || {};
+    const configuracoesAtualizadas = {
+      ...configuracoesAtuais,
       ...configuracoes
     };
     
-    await updateDoc(usuarioRef, {
-      configuracoes: configAtualizadas
+    await updateDoc(docRef, {
+      configuracoes: configuracoesAtualizadas,
+      dataAtualizacao: serverTimestamp()
     });
+    
+    console.log(`Configurações do usuário ${userId} atualizadas`);
+  } catch (error) {
+    console.error('Erro ao atualizar configurações do usuário:', error);
+    throw error;
   }
 }; 

@@ -1,24 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { 
-  criarEntrevista,
-  listarEntrevistasDoUsuario,
-  obterEntrevistaPorId,
+  obterEntrevistasDoUsuario, 
+  obterEntrevista, 
+  criarEntrevista, 
+  atualizarEntrevista, 
+  excluirEntrevista, 
   adicionarPergunta,
-  atualizarEntrevista,
-  finalizarEntrevista,
-  removerEntrevista
+  salvarResposta,
+  adicionarFeedback
 } from '@/services/entrevistaService';
 import { 
-  Entrevista, 
-  TipoEntrevista, 
-  StatusEntrevista,
-  TipoPergunta
-} from '@/models/types';
-import { 
+  registrarCriacaoEntrevista, 
   registrarInicioEntrevista, 
-  registrarConclusaoEntrevista 
+  registrarConclusaoEntrevista,
+  registrarSolicitacaoFeedback
 } from '@/services/atividadeService';
+import { Entrevista, TipoEntrevista, StatusEntrevista, TipoPergunta } from '@/models/types';
 
 export const useEntrevistas = () => {
   const { data: session } = useSession();
@@ -27,214 +25,259 @@ export const useEntrevistas = () => {
   const [carregando, setCarregando] = useState<boolean>(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  // Carregar entrevistas do usuário
-  const carregarEntrevistas = async () => {
-    if (!session?.user?.id) {
-      setEntrevistas([]);
-      return;
-    }
+  // Carregar todas as entrevistas do usuário
+  const carregarEntrevistas = useCallback(async () => {
+    if (!session?.user?.id) return;
+
+    setCarregando(true);
+    setErro(null);
 
     try {
-      setCarregando(true);
-      setErro(null);
-      
-      const listaEntrevistas = await listarEntrevistasDoUsuario(session.user.id);
-      setEntrevistas(listaEntrevistas);
+      const entrevistasDoUsuario = await obterEntrevistasDoUsuario(session.user.id);
+      setEntrevistas(entrevistasDoUsuario);
     } catch (error) {
       console.error('Erro ao carregar entrevistas:', error);
-      setErro('Não foi possível carregar as entrevistas');
+      setErro('Não foi possível carregar suas entrevistas. Tente novamente mais tarde.');
     } finally {
       setCarregando(false);
     }
-  };
+  }, [session?.user?.id]);
 
-  // Carregar entrevistas quando o usuário estiver autenticado
-  useEffect(() => {
-    if (session?.user?.id) {
-      carregarEntrevistas();
-    }
-  }, [session]);
+  // Obter uma entrevista específica pelo ID
+  const obterEntrevistaDetalhada = useCallback(async (entrevistaId: string) => {
+    if (!session?.user?.id) return null;
 
-  // Obter uma entrevista específica
-  const obterEntrevista = async (id: string) => {
+    setCarregando(true);
+    setErro(null);
+
     try {
-      setCarregando(true);
-      setErro(null);
+      const entrevistaDetalhada = await obterEntrevista(entrevistaId);
       
-      const entrevista = await obterEntrevistaPorId(id);
-      setEntrevistaAtual(entrevista);
-      return entrevista;
+      if (!entrevistaDetalhada) {
+        setErro('Entrevista não encontrada');
+        return null;
+      }
+      
+      if (entrevistaDetalhada.userId !== session.user.id) {
+        setErro('Você não tem permissão para acessar esta entrevista');
+        return null;
+      }
+      
+      setEntrevistaAtual(entrevistaDetalhada);
+      return entrevistaDetalhada;
     } catch (error) {
       console.error('Erro ao obter entrevista:', error);
-      setErro('Não foi possível obter a entrevista');
+      setErro('Não foi possível carregar os detalhes da entrevista. Tente novamente mais tarde.');
       return null;
     } finally {
       setCarregando(false);
     }
-  };
+  }, [session?.user?.id]);
 
-  // Criar nova entrevista
-  const novaEntrevista = async (
+  // Criar uma nova entrevista
+  const novaEntrevista = useCallback(async (
     titulo: string,
     tipo: TipoEntrevista,
     descricao?: string
   ) => {
-    if (!session?.user?.id) {
-      throw new Error('Usuário não autenticado');
-    }
+    if (!session?.user?.id) return null;
+
+    setCarregando(true);
+    setErro(null);
 
     try {
-      setCarregando(true);
-      setErro(null);
-      
-      const entrevistaId = await criarEntrevista(
-        session.user.id,
-        titulo,
-        tipo,
-        descricao
-      );
+      const entrevistaId = await criarEntrevista(session.user.id, titulo, tipo, descricao);
       
       // Registrar atividade
-      await registrarInicioEntrevista(session.user.id, entrevistaId, titulo);
+      await registrarCriacaoEntrevista(session.user.id, entrevistaId, titulo);
       
-      // Atualizar a lista de entrevistas
       await carregarEntrevistas();
-      
       return entrevistaId;
     } catch (error) {
       console.error('Erro ao criar entrevista:', error);
-      setErro('Não foi possível criar a entrevista');
-      throw error;
+      setErro('Não foi possível criar a entrevista. Tente novamente mais tarde.');
+      return null;
     } finally {
       setCarregando(false);
     }
-  };
+  }, [session?.user?.id, carregarEntrevistas]);
 
-  // Adicionar pergunta a uma entrevista
-  const adicionarNovaPergunta = async (
+  // Atualizar dados de uma entrevista
+  const atualizarDadosEntrevista = useCallback(async (
+    entrevistaId: string,
+    dados: Partial<Omit<Entrevista, 'id' | 'userId' | 'dataCriacao' | 'perguntas'>>
+  ) => {
+    if (!session?.user?.id) return false;
+
+    setCarregando(true);
+    setErro(null);
+
+    try {
+      await atualizarEntrevista(entrevistaId, dados);
+      
+      // Se estiver atualizando para Em Andamento, registrar início
+      if (dados.status === StatusEntrevista.EM_ANDAMENTO) {
+        await registrarInicioEntrevista(
+          session.user.id, 
+          entrevistaId, 
+          entrevistaAtual?.titulo || 'Entrevista'
+        );
+      }
+      
+      // Se estiver atualizando para Concluída, registrar conclusão
+      if (dados.status === StatusEntrevista.CONCLUIDA) {
+        await registrarConclusaoEntrevista(
+          session.user.id, 
+          entrevistaId, 
+          entrevistaAtual?.titulo || 'Entrevista',
+          dados.pontuacaoGeral
+        );
+      }
+      
+      // Recarregar a entrevista para atualizar os dados
+      if (entrevistaAtual) {
+        await obterEntrevistaDetalhada(entrevistaId);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Erro ao atualizar entrevista:', error);
+      setErro('Não foi possível atualizar a entrevista. Tente novamente mais tarde.');
+      return false;
+    } finally {
+      setCarregando(false);
+    }
+  }, [session?.user?.id, entrevistaAtual, obterEntrevistaDetalhada]);
+
+  // Excluir uma entrevista
+  const excluirEntrevistaAtual = useCallback(async (entrevistaId: string) => {
+    if (!session?.user?.id) return false;
+
+    setCarregando(true);
+    setErro(null);
+
+    try {
+      await excluirEntrevista(entrevistaId);
+      await carregarEntrevistas();
+      return true;
+    } catch (error) {
+      console.error('Erro ao excluir entrevista:', error);
+      setErro('Não foi possível excluir a entrevista. Tente novamente mais tarde.');
+      return false;
+    } finally {
+      setCarregando(false);
+    }
+  }, [session?.user?.id, carregarEntrevistas]);
+
+  // Adicionar uma nova pergunta à entrevista
+  const adicionarNovaPergunta = useCallback(async (
     entrevistaId: string,
     texto: string,
     tipoPergunta: TipoPergunta
   ) => {
+    if (!session?.user?.id) return null;
+
+    setCarregando(true);
+    setErro(null);
+
     try {
-      setCarregando(true);
-      setErro(null);
-      
       const perguntaId = await adicionarPergunta(entrevistaId, texto, tipoPergunta);
       
-      // Atualizar a entrevista atual se estiver carregada
-      if (entrevistaAtual && entrevistaAtual.id === entrevistaId) {
-        const entrevistaAtualizada = await obterEntrevistaPorId(entrevistaId);
-        setEntrevistaAtual(entrevistaAtualizada);
+      // Recarregar a entrevista para atualizar os dados
+      if (entrevistaAtual) {
+        await obterEntrevistaDetalhada(entrevistaId);
       }
       
       return perguntaId;
     } catch (error) {
       console.error('Erro ao adicionar pergunta:', error);
-      setErro('Não foi possível adicionar a pergunta');
-      throw error;
+      setErro('Não foi possível adicionar a pergunta. Tente novamente mais tarde.');
+      return null;
     } finally {
       setCarregando(false);
     }
-  };
+  }, [session?.user?.id, entrevistaAtual, obterEntrevistaDetalhada]);
 
-  // Atualizar dados de uma entrevista
-  const atualizarDadosEntrevista = async (
-    id: string,
-    dados: Partial<Entrevista>
+  // Salvar resposta para uma pergunta
+  const salvarRespostaAtual = useCallback(async (
+    entrevistaId: string,
+    perguntaId: string,
+    resposta: string
   ) => {
+    if (!session?.user?.id) return false;
+
+    setCarregando(true);
+    setErro(null);
+
     try {
-      setCarregando(true);
-      setErro(null);
+      await salvarResposta(perguntaId, resposta);
       
-      await atualizarEntrevista(id, dados);
-      
-      // Atualizar a entrevista atual se estiver carregada
-      if (entrevistaAtual && entrevistaAtual.id === id) {
-        const entrevistaAtualizada = await obterEntrevistaPorId(id);
-        setEntrevistaAtual(entrevistaAtualizada);
+      // Recarregar a entrevista para atualizar os dados
+      if (entrevistaAtual) {
+        await obterEntrevistaDetalhada(entrevistaId);
       }
-      
-      // Atualizar a lista de entrevistas
-      await carregarEntrevistas();
       
       return true;
     } catch (error) {
-      console.error('Erro ao atualizar entrevista:', error);
-      setErro('Não foi possível atualizar a entrevista');
-      throw error;
+      console.error('Erro ao salvar resposta:', error);
+      setErro('Não foi possível salvar a resposta. Tente novamente mais tarde.');
+      return false;
     } finally {
       setCarregando(false);
     }
-  };
+  }, [session?.user?.id, entrevistaAtual, obterEntrevistaDetalhada]);
 
-  // Finalizar uma entrevista com feedback
-  const concluirEntrevista = async (
-    id: string,
-    feedback: string,
-    pontuacao: number,
-    duracao: number
+  // Gerar feedback usando IA para uma resposta
+  const gerarFeedbackAI = useCallback(async (
+    entrevistaId: string,
+    perguntaId: string
   ) => {
-    if (!session?.user?.id) {
-      throw new Error('Usuário não autenticado');
-    }
+    if (!session?.user?.id) return false;
+
+    setCarregando(true);
+    setErro(null);
 
     try {
-      setCarregando(true);
-      setErro(null);
+      // Encontrar a pergunta no estado atual
+      const pergunta = entrevistaAtual?.perguntas?.find(p => p.id === perguntaId);
       
-      await finalizarEntrevista(id, feedback, pontuacao, duracao);
-      
-      // Registrar atividade
-      const entrevista = await obterEntrevistaPorId(id);
-      if (entrevista) {
-        await registrarConclusaoEntrevista(
-          session.user.id,
-          id,
-          entrevista.titulo,
-          pontuacao
-        );
+      if (!pergunta || !pergunta.resposta) {
+        setErro('É necessário fornecer uma resposta antes de solicitar feedback.');
+        return false;
       }
       
-      // Atualizar estado
-      setEntrevistaAtual(entrevista);
-      await carregarEntrevistas();
+      // Aqui seria implementada a chamada para a API de IA para gerar o feedback
+      // Por enquanto, vamos simular um feedback genérico
+      const feedbackGerado = "Sua resposta está clara e bem estruturada. Você abordou os pontos principais da questão, mas poderia fornecer mais exemplos específicos para ilustrar sua experiência.";
+      const pontuacao = Math.floor(Math.random() * 4) + 7; // Pontuação aleatória entre 7 e 10
+      
+      // Salvar o feedback gerado
+      await adicionarFeedback(perguntaId, feedbackGerado, pontuacao);
+      
+      // Registrar a atividade
+      await registrarSolicitacaoFeedback(session.user.id, entrevistaId, perguntaId);
+      
+      // Recarregar a entrevista para atualizar os dados
+      if (entrevistaAtual) {
+        await obterEntrevistaDetalhada(entrevistaId);
+      }
       
       return true;
     } catch (error) {
-      console.error('Erro ao finalizar entrevista:', error);
-      setErro('Não foi possível finalizar a entrevista');
-      throw error;
+      console.error('Erro ao gerar feedback:', error);
+      setErro('Não foi possível gerar o feedback. Tente novamente mais tarde.');
+      return false;
     } finally {
       setCarregando(false);
     }
-  };
+  }, [session?.user?.id, entrevistaAtual, obterEntrevistaDetalhada]);
 
-  // Excluir uma entrevista
-  const excluirEntrevista = async (id: string) => {
-    try {
-      setCarregando(true);
-      setErro(null);
-      
-      await removerEntrevista(id);
-      
-      // Se a entrevista atual for excluída, limpar o estado
-      if (entrevistaAtual && entrevistaAtual.id === id) {
-        setEntrevistaAtual(null);
-      }
-      
-      // Atualizar a lista de entrevistas
-      await carregarEntrevistas();
-      
-      return true;
-    } catch (error) {
-      console.error('Erro ao excluir entrevista:', error);
-      setErro('Não foi possível excluir a entrevista');
-      throw error;
-    } finally {
-      setCarregando(false);
+  // Carregar entrevistas quando o componente for montado
+  useEffect(() => {
+    if (session?.user?.id) {
+      carregarEntrevistas();
     }
-  };
+  }, [session?.user?.id, carregarEntrevistas]);
 
   return {
     entrevistas,
@@ -242,11 +285,12 @@ export const useEntrevistas = () => {
     carregando,
     erro,
     carregarEntrevistas,
-    obterEntrevista,
+    obterEntrevista: obterEntrevistaDetalhada,
     novaEntrevista,
-    adicionarNovaPergunta,
     atualizarDadosEntrevista,
-    concluirEntrevista,
-    excluirEntrevista
+    excluirEntrevista: excluirEntrevistaAtual,
+    adicionarNovaPergunta,
+    salvarResposta: salvarRespostaAtual,
+    gerarFeedback: gerarFeedbackAI
   };
 }; 

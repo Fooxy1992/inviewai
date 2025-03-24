@@ -1,59 +1,88 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Função auxiliar para verificar se o usuário está autenticado
+    // Função auxiliar para verificar autenticação
     function isAuthenticated() {
       return request.auth != null;
     }
     
     // Função auxiliar para verificar se o usuário é dono do recurso
     function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+      return request.auth.uid == userId;
     }
     
-    // Regras para a coleção de usuários
+    // Regras para coleção de usuários
     match /usuarios/{userId} {
-      // Apenas o próprio usuário pode ler ou escrever seus dados
-      allow read, write: if isOwner(userId);
-    }
-    
-    // Regras para a coleção de entrevistas
-    match /entrevistas/{entrevistaId} {
-      // O usuário pode ler ou escrever apenas suas próprias entrevistas
-      allow read, write: if isOwner(resource.data.usuarioId);
+      // Permitir leitura apenas pelo próprio usuário
+      allow read: if isAuthenticated() && isOwner(userId);
       
-      // Permissão para criar uma nova entrevista
-      allow create: if isAuthenticated() && request.resource.data.usuarioId == request.auth.uid;
+      // Permitir criação apenas pelo próprio usuário
+      allow create: if isAuthenticated() && isOwner(userId);
+      
+      // Permitir atualização apenas pelo próprio usuário
+      allow update: if isAuthenticated() && isOwner(userId);
+      
+      // Nunca permitir exclusão direta de usuários
+      allow delete: if false;
     }
     
-    // Regras para a coleção de perguntas
+    // Regras para coleção de entrevistas
+    match /entrevistas/{entrevistaId} {
+      // Permitir leitura apenas pelo dono da entrevista
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      
+      // Permitir criação apenas se o usuário for o dono
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
+      
+      // Permitir atualização apenas pelo dono da entrevista
+      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      
+      // Permitir exclusão apenas pelo dono da entrevista
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+    
+    // Regras para coleção de perguntas
     match /perguntas/{perguntaId} {
       // Função para verificar se o usuário é dono da entrevista associada
       function isEntrevistaOwner() {
         let entrevistaId = resource.data.entrevistaId;
         let entrevista = get(/databases/$(database)/documents/entrevistas/$(entrevistaId));
-        return isOwner(entrevista.data.usuarioId);
+        return isOwner(entrevista.data.userId);
       }
       
-      // O usuário pode ler ou escrever apenas perguntas de suas próprias entrevistas
-      allow read, write: if isEntrevistaOwner();
+      // Permitir leitura apenas pelo dono da entrevista associada
+      allow read: if isAuthenticated() && isEntrevistaOwner();
       
-      // Permissão para criar uma nova pergunta para uma entrevista existente
-      allow create: if isAuthenticated() && 
-                     exists(/databases/$(database)/documents/entrevistas/$(request.resource.data.entrevistaId)) &&
-                     get(/databases/$(database)/documents/entrevistas/$(request.resource.data.entrevistaId)).data.usuarioId == request.auth.uid;
+      // Permitir criação apenas pelo dono da entrevista associada
+      allow create: if isAuthenticated() && (
+        get(/databases/$(database)/documents/entrevistas/$(request.resource.data.entrevistaId)).data.userId == request.auth.uid
+      );
+      
+      // Permitir atualização apenas pelo dono da entrevista associada
+      allow update: if isAuthenticated() && isEntrevistaOwner();
+      
+      // Permitir exclusão apenas pelo dono da entrevista associada
+      allow delete: if isAuthenticated() && isEntrevistaOwner();
     }
     
-    // Regras para a coleção de atividades
+    // Regras para coleção de atividades
     match /atividades/{atividadeId} {
-      // O usuário pode ler apenas suas próprias atividades
-      allow read: if isOwner(resource.data.usuarioId);
+      // Permitir leitura apenas pelo próprio usuário
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
       
-      // Permissão para criar um registro de atividade
-      allow create: if isAuthenticated() && request.resource.data.usuarioId == request.auth.uid;
+      // Permitir criação apenas pelo próprio usuário
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
       
-      // Ninguém pode modificar ou excluir registros de atividades
-      allow update, delete: if false;
+      // Não permitir atualização (atividades são imutáveis)
+      allow update: if false;
+      
+      // Não permitir exclusão direta de atividades
+      allow delete: if false;
+    }
+    
+    // Negação por padrão para todas as outras coleções
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 } 

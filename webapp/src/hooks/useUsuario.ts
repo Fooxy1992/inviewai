@@ -1,113 +1,115 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { 
   obterUsuarioPorId, 
-  atualizarPerfilUsuario, 
+  atualizarUsuario, 
   atualizarConfiguracoesUsuario 
 } from '@/services/usuarioService';
-import { Usuario, Configuracoes } from '@/models/types';
-import { registrarAtualizacaoPerfil, registrarAtualizacaoConfiguracoes } from '@/services/atividadeService';
+import { obterAtividadesRecentes } from '@/services/atividadeService';
+import { Usuario, Atividade } from '@/models/types';
 
 export const useUsuario = () => {
   const { data: session } = useSession();
   const [usuario, setUsuario] = useState<Usuario | null>(null);
-  const [carregando, setCarregando] = useState<boolean>(true);
+  const [atividades, setAtividades] = useState<Atividade[]>([]);
+  const [carregando, setCarregando] = useState<boolean>(false);
   const [erro, setErro] = useState<string | null>(null);
 
   // Carregar dados do usuário
-  useEffect(() => {
-    const carregarUsuario = async () => {
-      if (session?.user?.id) {
-        try {
-          setCarregando(true);
-          setErro(null);
-          
-          const dadosUsuario = await obterUsuarioPorId(session.user.id);
-          setUsuario(dadosUsuario);
-        } catch (error) {
-          console.error('Erro ao carregar dados do usuário:', error);
-          setErro('Não foi possível carregar os dados do usuário');
-        } finally {
-          setCarregando(false);
-        }
-      } else {
-        setUsuario(null);
-        setCarregando(false);
-      }
-    };
+  const carregarUsuario = useCallback(async () => {
+    if (!session?.user?.id) return;
 
-    carregarUsuario();
-  }, [session]);
-
-  // Atualizar perfil do usuário
-  const atualizarPerfil = async (dados: { nome?: string; fotoPerfil?: string }) => {
-    if (!session?.user?.id) {
-      throw new Error('Usuário não autenticado');
-    }
+    setCarregando(true);
+    setErro(null);
 
     try {
-      setCarregando(true);
-      await atualizarPerfilUsuario(session.user.id, dados);
-      
-      // Registrar atividade
-      await registrarAtualizacaoPerfil(session.user.id);
-      
-      // Atualizar estado local
-      setUsuario((usuarioAtual) => {
-        if (!usuarioAtual) return null;
-        return { ...usuarioAtual, ...dados };
-      });
-      
+      const dadosUsuario = await obterUsuarioPorId(session.user.id);
+      setUsuario(dadosUsuario);
+    } catch (error) {
+      console.error('Erro ao carregar usuário:', error);
+      setErro('Não foi possível carregar os dados do usuário. Tente novamente mais tarde.');
+    } finally {
+      setCarregando(false);
+    }
+  }, [session?.user?.id]);
+
+  // Carregar atividades recentes do usuário
+  const carregarAtividades = useCallback(async () => {
+    if (!session?.user?.id) return;
+
+    setCarregando(true);
+    setErro(null);
+
+    try {
+      const atividadesRecentes = await obterAtividadesRecentes(session.user.id);
+      setAtividades(atividadesRecentes);
+    } catch (error) {
+      console.error('Erro ao carregar atividades:', error);
+      setErro('Não foi possível carregar as atividades recentes. Tente novamente mais tarde.');
+    } finally {
+      setCarregando(false);
+    }
+  }, [session?.user?.id]);
+
+  // Atualizar dados do perfil do usuário
+  const atualizarPerfil = useCallback(async (
+    dados: { nome?: string; imagemUrl?: string }
+  ) => {
+    if (!session?.user?.id) return false;
+
+    setCarregando(true);
+    setErro(null);
+
+    try {
+      await atualizarUsuario(session.user.id, dados);
+      await carregarUsuario(); // Recarregar dados atualizados
       return true;
     } catch (error) {
       console.error('Erro ao atualizar perfil:', error);
-      setErro('Não foi possível atualizar o perfil');
-      throw error;
+      setErro('Não foi possível atualizar o perfil. Tente novamente mais tarde.');
+      return false;
     } finally {
       setCarregando(false);
     }
-  };
+  }, [session?.user?.id, carregarUsuario]);
 
   // Atualizar configurações do usuário
-  const atualizarConfiguracoes = async (configuracoes: Partial<Configuracoes>) => {
-    if (!session?.user?.id) {
-      throw new Error('Usuário não autenticado');
-    }
+  const atualizarConfiguracoes = useCallback(async (
+    configuracoes: Usuario['configuracoes']
+  ) => {
+    if (!session?.user?.id || !usuario) return false;
+
+    setCarregando(true);
+    setErro(null);
 
     try {
-      setCarregando(true);
       await atualizarConfiguracoesUsuario(session.user.id, configuracoes);
-      
-      // Identificar qual configuração foi atualizada
-      const configNomes = Object.keys(configuracoes).join(', ');
-      await registrarAtualizacaoConfiguracoes(session.user.id, configNomes);
-      
-      // Atualizar estado local
-      setUsuario((usuarioAtual) => {
-        if (!usuarioAtual) return null;
-        return {
-          ...usuarioAtual,
-          configuracoes: {
-            ...usuarioAtual.configuracoes,
-            ...configuracoes
-          }
-        };
-      });
-      
+      await carregarUsuario(); // Recarregar dados atualizados
       return true;
     } catch (error) {
       console.error('Erro ao atualizar configurações:', error);
-      setErro('Não foi possível atualizar as configurações');
-      throw error;
+      setErro('Não foi possível atualizar as configurações. Tente novamente mais tarde.');
+      return false;
     } finally {
       setCarregando(false);
     }
-  };
+  }, [session?.user?.id, usuario, carregarUsuario]);
+
+  // Carregar dados do usuário quando a sessão estiver disponível
+  useEffect(() => {
+    if (session?.user?.id) {
+      carregarUsuario();
+      carregarAtividades();
+    }
+  }, [session?.user?.id, carregarUsuario, carregarAtividades]);
 
   return {
     usuario,
+    atividades,
     carregando,
     erro,
+    carregarUsuario,
+    carregarAtividades,
     atualizarPerfil,
     atualizarConfiguracoes
   };

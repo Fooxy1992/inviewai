@@ -5,11 +5,29 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "usuarioId",
+          "fieldPath": "userId",
           "order": "ASCENDING"
         },
         {
           "fieldPath": "dataAtualizacao",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "entrevistas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "dataCriacao",
           "order": "DESCENDING"
         }
       ]
@@ -23,7 +41,7 @@
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "pontuacao",
+          "fieldPath": "dataCriacao",
           "order": "ASCENDING"
         }
       ]
@@ -33,7 +51,25 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
-          "fieldPath": "usuarioId",
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "data",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "atividades",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "tipo",
           "order": "ASCENDING"
         },
         {

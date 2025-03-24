@@ -3,12 +3,12 @@ import { Timestamp } from 'firebase/firestore';
 // Modelo de usuário
 export interface Usuario {
   id: string;
-  nome?: string;
+  nome: string;
   email: string;
-  fotoPerfil?: string;
+  imagemUrl: string | null;
   dataCriacao: Timestamp;
-  ultimoLogin?: Timestamp;
-  configuracoes?: Configuracoes;
+  dataAtualizacao: Timestamp;
+  configuracoes: ConfiguracoesUsuario;
 }
 
 // Configurações do usuário
@@ -22,73 +22,121 @@ export interface Configuracoes {
 // Modelo de entrevista
 export interface Entrevista {
   id: string;
-  usuarioId: string;
+  userId: string;
   titulo: string;
-  descricao?: string;
-  dataCriacao: Timestamp;
-  dataAtualizacao: Timestamp;
+  descricao: string;
   tipo: TipoEntrevista;
   status: StatusEntrevista;
-  perguntas: Pergunta[];
-  duracao?: number; // em minutos
-  pontuacao?: number; // 0-100
-  feedback?: string;
+  dataCriacao: Timestamp;
+  dataAtualizacao: Timestamp;
+  dataInicio?: Timestamp;
+  dataConclusao?: Timestamp;
+  feedbackGeral?: Feedback;
+  perguntas?: Pergunta[];
 }
 
 // Tipos de entrevistas
 export enum TipoEntrevista {
-  COMPORTAMENTAL = 'comportamental',
-  TECNICA = 'tecnica',
-  MISTA = 'mista',
-  CASE = 'case'
+  COMPORTAMENTAL = 'COMPORTAMENTAL',
+  TECNICA = 'TECNICA',
+  MISTA = 'MISTA',
 }
 
 // Status da entrevista
 export enum StatusEntrevista {
-  PENDENTE = 'pendente',
-  EM_ANDAMENTO = 'em_andamento',
-  CONCLUIDA = 'concluida',
-  ARQUIVADA = 'arquivada'
+  PENDENTE = 'PENDENTE',
+  EM_ANDAMENTO = 'EM_ANDAMENTO',
+  CONCLUIDA = 'CONCLUIDA',
+  CANCELADA = 'CANCELADA',
 }
 
 // Modelo de pergunta
 export interface Pergunta {
   id: string;
-  entrevistaId: string;
   texto: string;
-  resposta?: string;
-  feedback?: string;
-  tempo?: number; // em segundos
-  pontuacao?: number; // 0-10
-  tipoPergunta: TipoPergunta;
+  tipo: TipoPergunta;
+  tempoMaximo?: number;
+  entrevistaId: string;
+  dataCriacao: Timestamp;
+  resposta?: Resposta;
+  feedback?: Feedback;
 }
 
 // Tipos de perguntas
 export enum TipoPergunta {
-  ABERTA = 'aberta',
-  MULTIPLA_ESCOLHA = 'multipla_escolha',
-  TECNICA = 'tecnica',
-  COMPORTAMENTAL = 'comportamental'
+  COMPORTAMENTAL = 'COMPORTAMENTAL',
+  TECNICA = 'TECNICA',
+  GERAL = 'GERAL',
 }
 
 // Modelo para histórico de atividades
 export interface Atividade {
   id: string;
-  usuarioId: string;
+  userId: string;
   tipo: TipoAtividade;
   data: Timestamp;
-  detalhe?: string;
-  referencia?: {
-    tipo: string;
-    id: string;
-  };
+  metadados?: Record<string, any>;
 }
 
 // Tipos de atividades
 export enum TipoAtividade {
-  LOGIN = 'login',
-  ENTREVISTA_INICIADA = 'entrevista_iniciada',
-  ENTREVISTA_CONCLUIDA = 'entrevista_concluida',
-  CONFIGURACAO_ATUALIZADA = 'configuracao_atualizada',
-  PERFIL_ATUALIZADO = 'perfil_atualizado'
+  LOGIN = 'LOGIN',
+  CRIACAO_ENTREVISTA = 'CRIACAO_ENTREVISTA',
+  INICIO_ENTREVISTA = 'INICIO_ENTREVISTA',
+  CONCLUSAO_ENTREVISTA = 'CONCLUSAO_ENTREVISTA',
+  SOLICITACAO_FEEDBACK = 'SOLICITACAO_FEEDBACK',
+  ATUALIZACAO_PERFIL = 'ATUALIZACAO_PERFIL',
+  ATUALIZACAO_CONFIGURACOES = 'ATUALIZACAO_CONFIGURACOES',
+}
+
+// Interface para Estatísticas
+export interface Estatisticas {
+  totalEntrevistas: number;
+  entrevistasCompletas: number;
+  entrevistasPendentes: number;
+  mediaTempoResposta: number;
+  distribuicaoTipos: Record<TipoEntrevista, number>;
+  pontuacaoMedia: number;
+  pontuacaoPorCategoria: Record<TipoPergunta, number>;
+  ultimaAtualizacao: Timestamp;
+}
+
+// Interface para Modelo de Entrevista
+export interface ModeloEntrevista {
+  id: string;
+  titulo: string;
+  descricao?: string;
+  tipo: TipoEntrevista;
+  perguntas: {
+    texto: string;
+    tipoPergunta: TipoPergunta;
+  }[];
+  popularidade: number;
+  categoria: string;
+  dataCriacao: Date | any;
+}
+
+// Interface para configurações do usuário
+export interface ConfiguracoesUsuario {
+  temaEscuro: boolean;
+  receberNotificacoes: boolean;
+  idioma: string;
+  modeloIA: string;
+}
+
+// Interface para feedback
+export interface Feedback {
+  id?: string;
+  texto: string;
+  pontuacao: number;
+  dataCriacao: Timestamp;
+  geradoPorIA: boolean;
+}
+
+// Interface para resposta
+export interface Resposta {
+  texto: string;
+  audioUrl?: string;
+  duracao?: number;
+  dataCriacao: Timestamp;
 } 

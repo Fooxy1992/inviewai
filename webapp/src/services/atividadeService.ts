@@ -1,146 +1,138 @@
 import { 
   collection, 
-  doc, 
-  getDoc, 
+  addDoc, 
+  query, 
+  where, 
+  orderBy, 
+  limit, 
   getDocs, 
-  setDoc, 
-  serverTimestamp, 
-  Timestamp,
-  query,
-  where,
-  orderBy,
-  limit
+  serverTimestamp 
 } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-import { 
-  Atividade, 
-  TipoAtividade 
-} from '@/models/types';
+import { Atividade, TipoAtividade } from '@/models/types';
 
 const COLECAO_ATIVIDADES = 'atividades';
 
 /**
- * Registra uma nova atividade no sistema
+ * Registrar uma nova atividade do usuário
  */
-export const registrarAtividade = async (
-  usuarioId: string,
+export async function registrarAtividade(
+  userId: string,
   tipo: TipoAtividade,
-  detalhe?: string,
-  referencia?: { tipo: string; id: string }
-): Promise<string> => {
-  const atividadeRef = doc(collection(db, COLECAO_ATIVIDADES));
-  const id = atividadeRef.id;
-  
-  const novaAtividade: Atividade = {
-    id,
-    usuarioId,
-    tipo,
-    data: Timestamp.now(),
-    detalhe,
-    referencia
-  };
-  
-  await setDoc(atividadeRef, novaAtividade);
-  return id;
-};
+  metadados?: Record<string, any>
+): Promise<string> {
+  try {
+    const atividadesRef = collection(db, COLECAO_ATIVIDADES);
+    
+    const novaAtividade = {
+      userId,
+      tipo,
+      data: serverTimestamp(),
+      metadados: metadados || {}
+    };
+    
+    const docRef = await addDoc(atividadesRef, novaAtividade);
+    return docRef.id;
+  } catch (error) {
+    console.error('Erro ao registrar atividade:', error);
+    throw error;
+  }
+}
 
 /**
- * Lista as atividades recentes de um usuário
+ * Registrar login do usuário
  */
-export const listarAtividadesDoUsuario = async (
-  usuarioId: string,
-  limite: number = 10
-): Promise<Atividade[]> => {
-  const atividadesRef = collection(db, COLECAO_ATIVIDADES);
-  const q = query(
-    atividadesRef, 
-    where('usuarioId', '==', usuarioId),
-    orderBy('data', 'desc'),
-    limit(limite)
-  );
-  
-  const querySnapshot = await getDocs(q);
-  const atividades: Atividade[] = [];
-  
-  querySnapshot.forEach((doc) => {
-    atividades.push({ ...doc.data(), id: doc.id } as Atividade);
-  });
-  
-  return atividades;
-};
+export async function registrarLogin(userId: string): Promise<string> {
+  return registrarAtividade(userId, TipoAtividade.LOGIN);
+}
 
 /**
- * Registra atividade de login
+ * Registrar criação de entrevista
  */
-export const registrarLogin = async (usuarioId: string): Promise<void> => {
-  await registrarAtividade(
-    usuarioId,
-    TipoAtividade.LOGIN,
-    'Usuário realizou login no sistema'
-  );
-};
-
-/**
- * Registra início de entrevista
- */
-export const registrarInicioEntrevista = async (
-  usuarioId: string,
+export async function registrarCriacaoEntrevista(
+  userId: string,
   entrevistaId: string,
   titulo: string
-): Promise<void> => {
-  await registrarAtividade(
-    usuarioId,
-    TipoAtividade.ENTREVISTA_INICIADA,
-    `Iniciou a entrevista: ${titulo}`,
-    { tipo: 'entrevista', id: entrevistaId }
+): Promise<string> {
+  return registrarAtividade(
+    userId,
+    TipoAtividade.ENTREVISTA_CRIADA,
+    { entrevistaId, titulo }
   );
-};
+}
 
 /**
- * Registra conclusão de entrevista
+ * Registrar início de entrevista
  */
-export const registrarConclusaoEntrevista = async (
-  usuarioId: string,
+export async function registrarInicioEntrevista(
+  userId: string,
+  entrevistaId: string,
+  titulo: string
+): Promise<string> {
+  return registrarAtividade(
+    userId,
+    TipoAtividade.ENTREVISTA_INICIADA,
+    { entrevistaId, titulo }
+  );
+}
+
+/**
+ * Registrar conclusão de entrevista
+ */
+export async function registrarConclusaoEntrevista(
+  userId: string,
   entrevistaId: string,
   titulo: string,
   pontuacao?: number
-): Promise<void> => {
-  let detalhe = `Concluiu a entrevista: ${titulo}`;
-  if (pontuacao !== undefined) {
-    detalhe += ` com pontuação ${pontuacao}`;
-  }
-  
-  await registrarAtividade(
-    usuarioId,
+): Promise<string> {
+  return registrarAtividade(
+    userId,
     TipoAtividade.ENTREVISTA_CONCLUIDA,
-    detalhe,
-    { tipo: 'entrevista', id: entrevistaId }
+    { entrevistaId, titulo, pontuacao }
   );
-};
+}
 
 /**
- * Registra atualização de configurações
+ * Registrar solicitação de feedback
  */
-export const registrarAtualizacaoConfiguracoes = async (
-  usuarioId: string,
-  configuracaoAtualizada: string
-): Promise<void> => {
-  await registrarAtividade(
-    usuarioId,
-    TipoAtividade.CONFIGURACAO_ATUALIZADA,
-    `Atualizou a configuração: ${configuracaoAtualizada}`
+export async function registrarSolicitacaoFeedback(
+  userId: string,
+  entrevistaId: string,
+  perguntaId: string
+): Promise<string> {
+  return registrarAtividade(
+    userId,
+    TipoAtividade.FEEDBACK_SOLICITADO,
+    { entrevistaId, perguntaId }
   );
-};
+}
 
 /**
- * Registra atualização de perfil
+ * Obter atividades recentes do usuário
  */
-export const registrarAtualizacaoPerfil = async (
-  usuarioId: string
-): Promise<void> => {
-  await registrarAtividade(
-    usuarioId,
-    TipoAtividade.PERFIL_ATUALIZADO,
-    'Atualizou o perfil'
-  );
-}; 
+export async function obterAtividadesRecentes(
+  userId: string,
+  quantidade: number = 10
+): Promise<Atividade[]> {
+  try {
+    const atividadesRef = collection(db, COLECAO_ATIVIDADES);
+    const q = query(
+      atividadesRef,
+      where('userId', '==', userId),
+      orderBy('data', 'desc'),
+      limit(quantidade)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    const atividades: Atividade[] = [];
+    
+    querySnapshot.forEach((doc) => {
+      atividades.push({ id: doc.id, ...doc.data() } as Atividade);
+    });
+    
+    return atividades;
+  } catch (error) {
+    console.error('Erro ao obter atividades recentes:', error);
+    throw error;
+  }
+} 
