@@ -29,17 +29,18 @@ const helpLink = document.getElementById('help-link');
 // Constante para controlar se o login é obrigatório
 const LOGIN_REQUIRED = false; // Defina como true para voltar a exigir login
 
-// URLs - Usando JSONPlaceholder como teste (API pública)
-const BASE_URL = 'https://jsonplaceholder.typicode.com';
-const DASHBOARD_URL = `${BASE_URL}/posts`;
-const PROFILE_URL = `${BASE_URL}/users/1`;
-const SETTINGS_URL = `${BASE_URL}/todos`;
-const HELP_URL = `${BASE_URL}/comments`;
-const PRACTICE_URL = `${BASE_URL}/albums`;
-const LOGIN_URL = `${BASE_URL}/users`;
+// URLs - Usando a aplicação deployada no Vercel
+// Substitua 'inviewai.vercel.app' pelo seu domínio de produção no Vercel
+const BASE_URL = 'https://inviewai.vercel.app';
+const DASHBOARD_URL = `${BASE_URL}/dashboard`;
+const PROFILE_URL = `${BASE_URL}/dashboard/settings`;
+const SETTINGS_URL = `${BASE_URL}/dashboard/settings`;
+const HELP_URL = `${BASE_URL}/help`;
+const PRACTICE_URL = `${BASE_URL}/dashboard/practice`;
+const LOGIN_URL = `${BASE_URL}/login`;
 
 // Log de URLs para depuração
-console.log('URLs configuradas para API pública de teste:', { 
+console.log('URLs configuradas para ambiente de produção:', { 
   BASE_URL,
   LOGIN_URL,
   DASHBOARD_URL
