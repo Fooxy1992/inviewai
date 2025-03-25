@@ -34,6 +34,7 @@ import {
 } from '@chakra-ui/react';
 import { FaPlus, FaEdit, FaTrash, FaPlay } from 'react-icons/fa';
 import { useRouter } from 'next/router';
+import { Timestamp } from 'firebase/firestore';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useEntrevistas } from '@/hooks/useEntrevistas';
 import { Entrevista, TipoEntrevista, StatusEntrevista } from '@/models/types';
@@ -188,9 +189,9 @@ const EntrevistasPage = () => {
   // Renderizar o cartão de entrevista
   const renderEntrevistaCard = (entrevista: Entrevista) => {
     // Formatação de data relativa (ex: "há 2 dias")
-    const dataAtualizada = entrevista.dataAtualizacao.toDate ? 
-      entrevista.dataAtualizacao.toDate() : 
-      new Date(entrevista.dataAtualizacao);
+    const dataAtualizada = entrevista.dataAtualizacao instanceof Timestamp 
+      ? entrevista.dataAtualizacao.toDate() 
+      : new Date();
     
     const tempoRelativo = formatDistanceToNow(dataAtualizada, {
       addSuffix: true,
@@ -206,7 +207,7 @@ const EntrevistasPage = () => {
       case StatusEntrevista.CONCLUIDA:
         statusColor = 'green';
         break;
-      case StatusEntrevista.ARQUIVADA:
+      case StatusEntrevista.CANCELADA:
         statusColor = 'purple';
         break;
     }
@@ -223,9 +224,8 @@ const EntrevistasPage = () => {
       case TipoEntrevista.MISTA:
         tipoColor = 'purple';
         break;
-      case TipoEntrevista.CASE:
-        tipoColor = 'pink';
-        break;
+      default:
+        tipoColor = 'gray';
     }
 
     return (
@@ -294,7 +294,7 @@ const EntrevistasPage = () => {
             colorScheme="brand"
             size="sm"
             onClick={() => iniciarEntrevista(entrevista.id)}
-            isDisabled={entrevista.status === StatusEntrevista.ARQUIVADA}
+            isDisabled={entrevista.status === StatusEntrevista.CANCELADA}
           >
             {entrevista.status === StatusEntrevista.PENDENTE ? 'Iniciar' : 'Continuar'}
           </Button>
@@ -385,7 +385,6 @@ const EntrevistasPage = () => {
                       <option value={TipoEntrevista.COMPORTAMENTAL}>Comportamental</option>
                       <option value={TipoEntrevista.TECNICA}>Técnica</option>
                       <option value={TipoEntrevista.MISTA}>Mista</option>
-                      <option value={TipoEntrevista.CASE}>Case</option>
                     </Select>
                   </FormControl>
                   

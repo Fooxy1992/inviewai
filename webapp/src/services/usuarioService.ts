@@ -8,7 +8,8 @@ import {
   query, 
   where, 
   getDocs, 
-  serverTimestamp 
+  Timestamp,
+  serverTimestamp
 } from 'firebase/firestore';
 import { Usuario } from '@/models/types';
 
@@ -82,8 +83,8 @@ export const criarOuAtualizarUsuario = async (
         nome: userData.nome,
         email: userData.email,
         imagemUrl: userData.imagemUrl || null,
-        dataCriacao: serverTimestamp(),
-        dataAtualizacao: serverTimestamp(),
+        dataCriacao: Timestamp.now(),
+        dataAtualizacao: Timestamp.now(),
         configuracoes: {
           temaEscuro: false,
           receberNotificacoes: true,
@@ -100,7 +101,7 @@ export const criarOuAtualizarUsuario = async (
         nome: userData.nome,
         email: userData.email,
         imagemUrl: userData.imagemUrl || docSnap.data().imagemUrl,
-        dataAtualizacao: serverTimestamp()
+        dataAtualizacao: Timestamp.now()
       });
       console.log(`Usuário atualizado: ${userId}`);
     }
@@ -128,7 +129,7 @@ export const atualizarUsuario = async (
     const docRef = doc(firestore, COLECAO_USUARIOS, userId);
     const dadosAtualizacao = {
       ...dados,
-      dataAtualizacao: serverTimestamp()
+      dataAtualizacao: Timestamp.now()
     };
     
     await updateDoc(docRef, dadosAtualizacao);
@@ -164,7 +165,7 @@ export const atualizarConfiguracoesUsuario = async (
     
     await updateDoc(docRef, {
       configuracoes: configuracoesAtualizadas,
-      dataAtualizacao: serverTimestamp()
+      dataAtualizacao: Timestamp.now()
     });
     
     console.log(`Configurações do usuário ${userId} atualizadas`);

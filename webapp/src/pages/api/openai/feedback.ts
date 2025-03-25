@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { Configuration, OpenAIApi } from 'openai';
+import OpenAI from 'openai';
 import { getSession } from 'next-auth/react';
 
 /**
@@ -26,10 +26,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Configurar OpenAI
-    const configuration = new Configuration({
+    const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
-    const openai = new OpenAIApi(configuration);
 
     if (!process.env.OPENAI_API_KEY) {
       return res.status(500).json({ error: 'Chave da API OpenAI não configurada' });
@@ -62,7 +61,7 @@ Formato de saída:
 `;
 
     // Fazer a chamada para a API OpenAI
-    const completion = await openai.createChatCompletion({
+    const completion = await openai.chat.completions.create({
       model: modelo,
       messages: [
         { role: "system", content: "Você é um avaliador especialista em entrevistas de emprego." },
@@ -73,7 +72,7 @@ Formato de saída:
     });
 
     // Extrair e parsear a resposta
-    const responseContent = completion.data.choices[0]?.message?.content;
+    const responseContent = completion.choices[0]?.message?.content;
     if (!responseContent) {
       throw new Error('Resposta vazia da API OpenAI');
     }

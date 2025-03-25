@@ -92,7 +92,9 @@ const EstatisticasPage = () => {
     perguntasPorTipo: {
       [TipoPergunta.COMPORTAMENTAL]: 0,
       [TipoPergunta.TECNICA]: 0,
-      [TipoPergunta.GERAL]: 0
+      [TipoPergunta.GERAL]: 0,
+      [TipoPergunta.MULTIPLA_ESCOLHA]: 0,
+      [TipoPergunta.ABERTA]: 0
     },
     pontuacaoMedia: 0,
     entrevistasMaisRecentes: []
@@ -154,7 +156,9 @@ const EstatisticasPage = () => {
     const perguntasPorTipo = {
       [TipoPergunta.COMPORTAMENTAL]: 0,
       [TipoPergunta.TECNICA]: 0,
-      [TipoPergunta.GERAL]: 0
+      [TipoPergunta.GERAL]: 0,
+      [TipoPergunta.MULTIPLA_ESCOLHA]: 0,
+      [TipoPergunta.ABERTA]: 0
     };
 
     entrevistasFiltradas.forEach(e => {
@@ -441,7 +445,9 @@ const EstatisticasPage = () => {
                     const tipoInfo = {
                       [TipoPergunta.COMPORTAMENTAL]: { nome: 'Comportamentais', cor: 'purple' },
                       [TipoPergunta.TECNICA]: { nome: 'Técnicas', cor: 'green' },
-                      [TipoPergunta.GERAL]: { nome: 'Gerais', cor: 'blue' }
+                      [TipoPergunta.GERAL]: { nome: 'Gerais', cor: 'blue' },
+                      [TipoPergunta.MULTIPLA_ESCOLHA]: { nome: 'Múltipla Escolha', cor: 'pink' },
+                      [TipoPergunta.ABERTA]: { nome: 'Aberta', cor: 'orange' }
                     };
                     
                     const info = tipoInfo[tipo as TipoPergunta];

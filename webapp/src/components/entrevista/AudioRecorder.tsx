@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ChangeEvent } from 'react';
 import {
   Box,
   Button,
@@ -177,7 +177,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
             leftIcon={<FiMic />}
             colorScheme="blue"
             onClick={iniciarGravacao}
-            isFullWidth
+            w="full"
           >
             Iniciar Gravação
           </Button>
@@ -303,7 +303,7 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({
             <Box
               as="textarea"
               value={transcricaoEditada}
-              onChange={(e) => setTranscricaoEditada(e.target.value)}
+              onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setTranscricaoEditada(e.target.value)}
               placeholder={placeholder}
               p={3}
               borderWidth="1px"

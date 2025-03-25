@@ -35,7 +35,7 @@ import {
   FiCamera, 
   FiGlobe,
   FiBell,
-  FiBrush,
+  FiSliders,
   FiCode
 } from 'react-icons/fi';
 import { useSession } from 'next-auth/react';
@@ -221,16 +221,20 @@ const ConfiguracoesPage = () => {
                   name={usuario?.nome} 
                   src={usuario?.imagemUrl || undefined}
                   mb={4}
+                  position="relative"
                 >
-                  <AvatarBadge
-                    as={Button}
-                    size="sm"
+                  <Box
+                    position="absolute"
+                    bottom="0"
+                    right="0"
+                    bg="blue.500"
+                    p="1"
                     rounded="full"
-                    top="-10px"
-                    colorScheme="blue"
-                    aria-label="Alterar foto"
-                    icon={<FiCamera />}
-                  />
+                    cursor="pointer"
+                    _hover={{ bg: 'blue.600' }}
+                  >
+                    <Icon as={FiCamera} color="white" />
+                  </Box>
                 </Avatar>
                 
                 <Text fontWeight="medium">{usuario?.email}</Text>
@@ -294,7 +298,7 @@ const ConfiguracoesPage = () => {
                 <Flex justify="space-between" align="center">
                   <Box>
                     <Flex align="center">
-                      <Icon as={FiBrush} mr={2} color={mutedColor} />
+                      <Icon as={FiSliders} mr={2} color={mutedColor} />
                       <FormLabel color={labelColor} htmlFor="tema" mb={0}>Tema Escuro</FormLabel>
                     </Flex>
                     <Text fontSize="sm" color={mutedColor} ml={6}>

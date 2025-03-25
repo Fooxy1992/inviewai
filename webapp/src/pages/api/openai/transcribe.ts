@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { IncomingForm } from 'formidable';
 import { promises as fs } from 'fs';
-import { Configuration, OpenAIApi } from 'openai';
+import OpenAI from 'openai';
 
 // Desabilitar o bodyParser padrão para permitir o upload de arquivos
 export const config = {
@@ -27,10 +27,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // }
 
     // Configurar OpenAI
-    const configuration = new Configuration({
+    const openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
-    const openai = new OpenAIApi(configuration);
 
     if (!process.env.OPENAI_API_KEY) {
       return res.status(500).json({ error: 'Chave da API OpenAI não configurada' });
@@ -62,21 +61,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const audioData = await fs.readFile(audioPath);
     
     // Enviar para a API do OpenAI Whisper
-    const transcriptionResponse = await openai.createTranscription(
-      audioData as any,
-      "whisper-1",
-      undefined,
-      undefined,
-      undefined,
-      fields.language || "pt",
-    );
+    const transcriptionResponse = await openai.audio.transcriptions.create({
+      file: new File([audioData], audioFile.originalFilename || 'audio.webm', { 
+        type: audioFile.mimetype || 'audio/webm' 
+      }),
+      model: "whisper-1",
+      language: fields.language || "pt",
+    });
 
     // Remover o arquivo temporário
     await fs.unlink(audioPath);
 
     // Retornar a transcrição
     return res.status(200).json({ 
-      text: transcriptionResponse.data.text,
+      text: transcriptionResponse.text,
       success: true 
     });
     

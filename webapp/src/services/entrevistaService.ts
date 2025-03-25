@@ -21,7 +21,9 @@ import {
   StatusEntrevista, 
   TipoEntrevista, 
   Pergunta,
-  TipoPergunta 
+  TipoPergunta,
+  Resposta,
+  Feedback
 } from '@/models/types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -29,19 +31,19 @@ const COLECAO_ENTREVISTAS = 'entrevistas';
 const COLECAO_PERGUNTAS = 'perguntas';
 
 /**
- * Cria uma nova entrevista no Firestore
+ * Criar uma nova entrevista
  */
-export const criarEntrevista = async (
-  usuarioId: string,
+export async function criarEntrevista(
+  userId: string,
   titulo: string,
   tipo: TipoEntrevista,
   descricao?: string
-): Promise<string> => {
+): Promise<string> {
   const entrevistasRef = collection(db, COLECAO_ENTREVISTAS);
   
   const novaEntrevista: Entrevista = {
     id: uuidv4(),
-    usuarioId,
+    userId,
     titulo,
     descricao: descricao || '',
     dataCriacao: Timestamp.now(),
@@ -53,42 +55,35 @@ export const criarEntrevista = async (
   
   await setDoc(doc(entrevistasRef, novaEntrevista.id), novaEntrevista);
   return novaEntrevista.id;
-};
+}
 
 /**
- * Obtém uma entrevista pelo ID
+ * Obter uma entrevista pelo ID
  */
-export const obterEntrevistaPorId = async (id: string): Promise<Entrevista | null> => {
-  const entrevistaRef = doc(db, COLECAO_ENTREVISTAS, id);
-  const entrevistaDoc = await getDoc(entrevistaRef);
-  
-  if (entrevistaDoc.exists()) {
-    const entrevista = entrevistaDoc.data() as Entrevista;
+export async function obterEntrevistaPorId(id: string): Promise<Entrevista | null> {
+  try {
+    const entrevistaRef = doc(db, COLECAO_ENTREVISTAS, id);
+    const entrevistaDoc = await getDoc(entrevistaRef);
     
-    // Buscar perguntas associadas
-    const perguntasRef = collection(db, COLECAO_PERGUNTAS);
-    const q = query(perguntasRef, where('entrevistaId', '==', id));
-    const querySnapshot = await getDocs(q);
+    if (!entrevistaDoc.exists()) {
+      return null;
+    }
     
-    const perguntas: Pergunta[] = [];
-    querySnapshot.forEach((doc) => {
-      perguntas.push({ id: doc.id, ...doc.data() } as Pergunta);
-    });
-    
-    return { ...entrevista, perguntas };
+    return entrevistaDoc.data() as Entrevista;
+  } catch (error) {
+    console.error('Erro ao obter entrevista:', error);
+    return null;
   }
-  
-  return null;
-};
+}
 
 /**
  * Lista todas as entrevistas de um usuário
  */
-export const listarEntrevistasDoUsuario = async (usuarioId: string): Promise<Entrevista[]> => {
+export async function listarEntrevistasDoUsuario(userId: string): Promise<Entrevista[]> {
   const entrevistasRef = collection(db, COLECAO_ENTREVISTAS);
   const q = query(
     entrevistasRef, 
-    where('usuarioId', '==', usuarioId),
+    where('userId', '==', userId),
     orderBy('dataAtualizacao', 'desc')
   );
   
@@ -96,198 +91,10 @@ export const listarEntrevistasDoUsuario = async (usuarioId: string): Promise<Ent
   const entrevistas: Entrevista[] = [];
   
   querySnapshot.forEach((doc) => {
-    entrevistas.push({ ...doc.data(), id: doc.id } as Entrevista);
+    entrevistas.push(doc.data() as Entrevista);
   });
   
   return entrevistas;
-};
-
-/**
- * Atualiza os detalhes de uma entrevista
- */
-export const atualizarEntrevista = async (
-  id: string,
-  dados: Partial<Entrevista>
-): Promise<void> => {
-  const entrevistaRef = doc(db, COLECAO_ENTREVISTAS, id);
-  
-  await updateDoc(entrevistaRef, {
-    ...dados,
-    dataAtualizacao: serverTimestamp()
-  });
-};
-
-/**
- * Adiciona uma pergunta a uma entrevista
- */
-export const adicionarPergunta = async (
-  entrevistaId: string,
-  texto: string,
-  tipoPergunta: TipoPergunta
-): Promise<string> => {
-  // Primeiro verifica se a entrevista existe
-  const entrevistaRef = doc(db, COLECAO_ENTREVISTAS, entrevistaId);
-  const entrevistaDoc = await getDoc(entrevistaRef);
-  
-  if (!entrevistaDoc.exists()) {
-    throw new Error('Entrevista não encontrada');
-  }
-  
-  const perguntaRef = doc(collection(db, COLECAO_PERGUNTAS));
-  const id = perguntaRef.id;
-  
-  const novaPergunta: Pergunta = {
-    id,
-    entrevistaId,
-    texto,
-    tipoPergunta
-  };
-  
-  await setDoc(perguntaRef, novaPergunta);
-  
-  // Atualiza a data de atualização da entrevista
-  await updateDoc(entrevistaRef, {
-    dataAtualizacao: serverTimestamp()
-  });
-  
-  return id;
-};
-
-/**
- * Adiciona resposta a uma pergunta
- */
-export const adicionarResposta = async (
-  perguntaId: string,
-  resposta: string,
-  tempo?: number
-): Promise<void> => {
-  const perguntaRef = doc(db, COLECAO_PERGUNTAS, perguntaId);
-  
-  await updateDoc(perguntaRef, {
-    resposta,
-    tempo
-  });
-};
-
-/**
- * Adiciona feedback a uma pergunta
- */
-export const adicionarFeedbackPergunta = async (
-  perguntaId: string,
-  feedback: string,
-  pontuacao?: number
-): Promise<void> => {
-  const perguntaRef = doc(db, COLECAO_PERGUNTAS, perguntaId);
-  
-  await updateDoc(perguntaRef, {
-    feedback,
-    pontuacao
-  });
-};
-
-/**
- * Finaliza uma entrevista
- */
-export const finalizarEntrevista = async (
-  entrevistaId: string,
-  feedback: string,
-  pontuacao: number,
-  duracao: number
-): Promise<void> => {
-  const entrevistaRef = doc(db, COLECAO_ENTREVISTAS, entrevistaId);
-  
-  await updateDoc(entrevistaRef, {
-    status: StatusEntrevista.CONCLUIDA,
-    feedback,
-    pontuacao,
-    duracao,
-    dataAtualizacao: serverTimestamp()
-  });
-};
-
-/**
- * Remove uma entrevista e suas perguntas associadas
- */
-export const removerEntrevista = async (entrevistaId: string): Promise<void> => {
-  // Primeiro, remove todas as perguntas associadas
-  const perguntasRef = collection(db, COLECAO_PERGUNTAS);
-  const q = query(perguntasRef, where('entrevistaId', '==', entrevistaId));
-  const querySnapshot = await getDocs(q);
-  
-  const batch: Promise<void>[] = [];
-  querySnapshot.forEach((doc) => {
-    batch.push(deleteDoc(doc.ref));
-  });
-  
-  await Promise.all(batch);
-  
-  // Em seguida, remove a entrevista
-  const entrevistaRef = doc(db, COLECAO_ENTREVISTAS, entrevistaId);
-  await deleteDoc(entrevistaRef);
-};
-
-/**
- * Obter todas as entrevistas de um usuário
- */
-export async function obterEntrevistasDoUsuario(userId: string): Promise<Entrevista[]> {
-  try {
-    const entrevistasRef = collection(db, COLECAO_ENTREVISTAS);
-    const q = query(
-      entrevistasRef, 
-      where('userId', '==', userId),
-      orderBy('dataAtualizacao', 'desc')
-    );
-    
-    const querySnapshot = await getDocs(q);
-    const entrevistas: Entrevista[] = [];
-    
-    querySnapshot.forEach((doc) => {
-      entrevistas.push({ id: doc.id, ...doc.data() } as Entrevista);
-    });
-    
-    return entrevistas;
-  } catch (error) {
-    console.error('Erro ao obter entrevistas:', error);
-    throw error;
-  }
-}
-
-/**
- * Obter uma entrevista específica com suas perguntas
- */
-export async function obterEntrevista(entrevistaId: string): Promise<Entrevista | null> {
-  try {
-    const entrevistaRef = doc(db, COLECAO_ENTREVISTAS, entrevistaId);
-    const entrevistaDoc = await getDoc(entrevistaRef);
-    
-    if (!entrevistaDoc.exists()) {
-      return null;
-    }
-    
-    const entrevista = { id: entrevistaDoc.id, ...entrevistaDoc.data() } as Entrevista;
-    
-    // Buscar perguntas relacionadas
-    const perguntasRef = collection(db, COLECAO_PERGUNTAS);
-    const q = query(
-      perguntasRef,
-      where('entrevistaId', '==', entrevistaId),
-      orderBy('dataCriacao', 'asc')
-    );
-    
-    const perguntasSnapshot = await getDocs(q);
-    const perguntas: Pergunta[] = [];
-    
-    perguntasSnapshot.forEach((doc) => {
-      perguntas.push({ id: doc.id, ...doc.data() } as Pergunta);
-    });
-    
-    entrevista.perguntas = perguntas;
-    
-    return entrevista;
-  } catch (error) {
-    console.error('Erro ao obter entrevista:', error);
-    throw error;
-  }
 }
 
 /**
@@ -299,40 +106,14 @@ export async function atualizarEntrevista(
 ): Promise<void> {
   try {
     const entrevistaRef = doc(db, COLECAO_ENTREVISTAS, entrevistaId);
-    
-    await updateDoc(entrevistaRef, {
+    const dadosAtualizados = {
       ...dados,
-      dataAtualizacao: serverTimestamp()
-    });
+      dataAtualizacao: Timestamp.now()
+    };
+    
+    await updateDoc(entrevistaRef, dadosAtualizados);
   } catch (error) {
     console.error('Erro ao atualizar entrevista:', error);
-    throw error;
-  }
-}
-
-/**
- * Excluir uma entrevista e suas perguntas
- */
-export async function excluirEntrevista(entrevistaId: string): Promise<void> {
-  try {
-    // Primeiro excluir todas as perguntas relacionadas
-    const perguntasRef = collection(db, COLECAO_PERGUNTAS);
-    const q = query(perguntasRef, where('entrevistaId', '==', entrevistaId));
-    const perguntasSnapshot = await getDocs(q);
-    
-    const deletePromises: Promise<void>[] = [];
-    
-    perguntasSnapshot.forEach((doc) => {
-      deletePromises.push(deleteDoc(doc.ref));
-    });
-    
-    await Promise.all(deletePromises);
-    
-    // Depois excluir a entrevista
-    const entrevistaRef = doc(db, COLECAO_ENTREVISTAS, entrevistaId);
-    await deleteDoc(entrevistaRef);
-  } catch (error) {
-    console.error('Erro ao excluir entrevista:', error);
     throw error;
   }
 }
@@ -343,28 +124,37 @@ export async function excluirEntrevista(entrevistaId: string): Promise<void> {
 export async function adicionarPergunta(
   entrevistaId: string,
   texto: string,
-  tipoPergunta: TipoPergunta
+  tipo: TipoPergunta
 ): Promise<string> {
   try {
-    // Atualizar dataAtualizacao da entrevista
+    // Obter a entrevista atual
     const entrevistaRef = doc(db, COLECAO_ENTREVISTAS, entrevistaId);
-    await updateDoc(entrevistaRef, {
-      dataAtualizacao: serverTimestamp()
-    });
+    const entrevistaDoc = await getDoc(entrevistaRef);
     
-    // Adicionar nova pergunta
-    const perguntasRef = collection(db, COLECAO_PERGUNTAS);
+    if (!entrevistaDoc.exists()) {
+      throw new Error(`Entrevista com ID ${entrevistaId} não encontrada`);
+    }
     
-    const novaPergunta = {
-      entrevistaId,
+    const entrevista = entrevistaDoc.data() as Entrevista;
+    
+    // Criar nova pergunta
+    const novaPergunta: Pergunta = {
+      id: uuidv4(),
       texto,
-      tipoPergunta,
-      dataCriacao: serverTimestamp()
+      tipo,
+      entrevistaId,
+      dataCriacao: Timestamp.now()
     };
     
-    const docRef = await addDoc(perguntasRef, novaPergunta);
+    // Atualizar a entrevista com a nova pergunta
+    const perguntas = entrevista.perguntas || [];
     
-    return docRef.id;
+    await updateDoc(entrevistaRef, {
+      perguntas: [...perguntas, novaPergunta],
+      dataAtualizacao: Timestamp.now()
+    });
+    
+    return novaPergunta.id;
   } catch (error) {
     console.error('Erro ao adicionar pergunta:', error);
     throw error;
@@ -375,15 +165,42 @@ export async function adicionarPergunta(
  * Salvar resposta para uma pergunta
  */
 export async function salvarResposta(
+  entrevistaId: string,
   perguntaId: string,
-  resposta: string
+  textoResposta: string
 ): Promise<void> {
   try {
-    const perguntaRef = doc(db, COLECAO_PERGUNTAS, perguntaId);
+    // Obter a entrevista atual
+    const entrevistaRef = doc(db, COLECAO_ENTREVISTAS, entrevistaId);
+    const entrevistaDoc = await getDoc(entrevistaRef);
     
-    await updateDoc(perguntaRef, {
-      resposta,
-      dataResposta: serverTimestamp()
+    if (!entrevistaDoc.exists()) {
+      throw new Error(`Entrevista com ID ${entrevistaId} não encontrada`);
+    }
+    
+    const entrevista = entrevistaDoc.data() as Entrevista;
+    const perguntas = entrevista.perguntas || [];
+    
+    // Encontrar a pergunta específica
+    const perguntaIndex = perguntas.findIndex(p => p.id === perguntaId);
+    
+    if (perguntaIndex === -1) {
+      throw new Error(`Pergunta com ID ${perguntaId} não encontrada na entrevista`);
+    }
+    
+    // Criar ou atualizar a resposta
+    const resposta: Resposta = {
+      texto: textoResposta,
+      dataCriacao: Timestamp.now()
+    };
+    
+    // Atualizar a pergunta com a resposta
+    perguntas[perguntaIndex].resposta = resposta;
+    
+    // Atualizar a entrevista
+    await updateDoc(entrevistaRef, {
+      perguntas,
+      dataAtualizacao: Timestamp.now()
     });
   } catch (error) {
     console.error('Erro ao salvar resposta:', error);
@@ -392,26 +209,49 @@ export async function salvarResposta(
 }
 
 /**
- * Adicionar feedback a uma pergunta
+ * Adicionar feedback para uma pergunta
  */
 export async function adicionarFeedback(
+  entrevistaId: string,
   perguntaId: string,
-  feedback: string,
+  feedbackTexto: string,
   pontuacao?: number
 ): Promise<void> {
   try {
-    const perguntaRef = doc(db, COLECAO_PERGUNTAS, perguntaId);
+    // Obter a entrevista atual
+    const entrevistaRef = doc(db, COLECAO_ENTREVISTAS, entrevistaId);
+    const entrevistaDoc = await getDoc(entrevistaRef);
     
-    const dadosUpdate: Record<string, any> = {
-      feedback,
-      dataFeedback: serverTimestamp()
-    };
-    
-    if (pontuacao !== undefined) {
-      dadosUpdate.pontuacao = pontuacao;
+    if (!entrevistaDoc.exists()) {
+      throw new Error(`Entrevista com ID ${entrevistaId} não encontrada`);
     }
     
-    await updateDoc(perguntaRef, dadosUpdate);
+    const entrevista = entrevistaDoc.data() as Entrevista;
+    const perguntas = entrevista.perguntas || [];
+    
+    // Encontrar a pergunta específica
+    const perguntaIndex = perguntas.findIndex(p => p.id === perguntaId);
+    
+    if (perguntaIndex === -1) {
+      throw new Error(`Pergunta com ID ${perguntaId} não encontrada na entrevista`);
+    }
+    
+    // Criar feedback
+    const feedback: Feedback = {
+      texto: feedbackTexto,
+      pontuacao: pontuacao || 0,
+      dataCriacao: Timestamp.now(),
+      geradoPorIA: true
+    };
+    
+    // Atualizar a pergunta com o feedback
+    perguntas[perguntaIndex].feedback = feedback;
+    
+    // Atualizar a entrevista
+    await updateDoc(entrevistaRef, {
+      perguntas,
+      dataAtualizacao: Timestamp.now()
+    });
   } catch (error) {
     console.error('Erro ao adicionar feedback:', error);
     throw error;
@@ -419,12 +259,32 @@ export async function adicionarFeedback(
 }
 
 /**
- * Remover uma pergunta
+ * Remover uma pergunta da entrevista
  */
-export async function removerPergunta(perguntaId: string): Promise<void> {
+export async function removerPergunta(
+  entrevistaId: string,
+  perguntaId: string
+): Promise<void> {
   try {
-    const perguntaRef = doc(db, COLECAO_PERGUNTAS, perguntaId);
-    await deleteDoc(perguntaRef);
+    // Obter a entrevista atual
+    const entrevistaRef = doc(db, COLECAO_ENTREVISTAS, entrevistaId);
+    const entrevistaDoc = await getDoc(entrevistaRef);
+    
+    if (!entrevistaDoc.exists()) {
+      throw new Error(`Entrevista com ID ${entrevistaId} não encontrada`);
+    }
+    
+    const entrevista = entrevistaDoc.data() as Entrevista;
+    const perguntas = entrevista.perguntas || [];
+    
+    // Filtrar a pergunta a ser removida
+    const perguntasAtualizadas = perguntas.filter(p => p.id !== perguntaId);
+    
+    // Atualizar a entrevista
+    await updateDoc(entrevistaRef, {
+      perguntas: perguntasAtualizadas,
+      dataAtualizacao: Timestamp.now()
+    });
   } catch (error) {
     console.error('Erro ao remover pergunta:', error);
     throw error;
@@ -441,17 +301,20 @@ export async function atualizarStatusEntrevista(
   try {
     const entrevistaRef = doc(db, COLECAO_ENTREVISTAS, entrevistaId);
     
-    const dadosUpdate: Record<string, any> = {
-      status,
-      dataAtualizacao: serverTimestamp()
-    };
+    // Dados adicionais com base no status
+    const dadosAdicionais: any = {};
     
-    // Se estiver sendo concluída, adicionar a data de conclusão
-    if (status === StatusEntrevista.CONCLUIDA) {
-      dadosUpdate.dataConclusao = serverTimestamp();
+    if (status === StatusEntrevista.EM_ANDAMENTO) {
+      dadosAdicionais.dataInicio = Timestamp.now();
+    } else if (status === StatusEntrevista.CONCLUIDA) {
+      dadosAdicionais.dataConclusao = Timestamp.now();
     }
     
-    await updateDoc(entrevistaRef, dadosUpdate);
+    await updateDoc(entrevistaRef, {
+      status,
+      dataAtualizacao: Timestamp.now(),
+      ...dadosAdicionais
+    });
   } catch (error) {
     console.error('Erro ao atualizar status da entrevista:', error);
     throw error;
@@ -459,28 +322,42 @@ export async function atualizarStatusEntrevista(
 }
 
 /**
- * Adicionar feedback geral a uma entrevista
+ * Adicionar feedback geral para uma entrevista
  */
 export async function adicionarFeedbackGeral(
   entrevistaId: string,
-  feedbackGeral: string,
-  pontuacaoGeral?: number
+  feedbackTexto: string,
+  pontuacao?: number
 ): Promise<void> {
   try {
     const entrevistaRef = doc(db, COLECAO_ENTREVISTAS, entrevistaId);
     
-    const dadosUpdate: Record<string, any> = {
-      feedbackGeral,
-      dataAtualizacao: serverTimestamp()
+    const feedback: Feedback = {
+      texto: feedbackTexto,
+      pontuacao: pontuacao || 0,
+      dataCriacao: Timestamp.now(),
+      geradoPorIA: true
     };
     
-    if (pontuacaoGeral !== undefined) {
-      dadosUpdate.pontuacaoGeral = pontuacaoGeral;
-    }
-    
-    await updateDoc(entrevistaRef, dadosUpdate);
+    await updateDoc(entrevistaRef, {
+      feedbackGeral: feedback,
+      dataAtualizacao: Timestamp.now()
+    });
   } catch (error) {
     console.error('Erro ao adicionar feedback geral:', error);
+    throw error;
+  }
+}
+
+/**
+ * Excluir uma entrevista
+ */
+export async function excluirEntrevista(entrevistaId: string): Promise<void> {
+  try {
+    const entrevistaRef = doc(db, COLECAO_ENTREVISTAS, entrevistaId);
+    await deleteDoc(entrevistaRef);
+  } catch (error) {
+    console.error('Erro ao excluir entrevista:', error);
     throw error;
   }
 } 

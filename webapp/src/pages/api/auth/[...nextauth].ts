@@ -1,10 +1,10 @@
-import NextAuth from 'next-auth';
+import NextAuth, { AuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { FirebaseError } from 'firebase/app';
 import { signInWithEmailAndPassword } from 'firebase/auth';
+import { FirebaseError } from 'firebase/app';
 import { auth } from '@/config/firebase';
 import { Session } from 'next-auth';
-import { criarUsuario, obterUsuarioPorId, atualizarUltimoLogin } from '@/services/usuarioService';
+import { criarOuAtualizarUsuario, obterUsuarioPorId } from '@/services/usuarioService';
 import { registrarLogin } from '@/services/atividadeService';
 
 // Estender a interface User para incluir o campo id
@@ -47,15 +47,14 @@ export default NextAuth({
           
           // Se o usuário não existir no Firestore, criar novo registro
           if (!firestoreUser) {
-            await criarUsuario(
+            await criarOuAtualizarUsuario(
               user.uid,
-              user.email || '',
-              user.displayName || '',
-              user.photoURL || ''
+              { 
+                nome: user.displayName || 'Usuário', 
+                email: user.email || '',
+                imagemUrl: user.photoURL || undefined
+              }
             );
-          } else {
-            // Atualiza o último login
-            await atualizarUltimoLogin(user.uid);
           }
           
           // Registrar atividade de login
@@ -85,9 +84,9 @@ export default NextAuth({
   },
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
-    signIn: '/login',
+    signIn: '/auth/login',
     signOut: '/',
-    error: '/login',
+    error: '/auth/login',
   },
   callbacks: {
     async jwt({ token, user }) {

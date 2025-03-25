@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { 
-  obterEntrevistasDoUsuario, 
-  obterEntrevista, 
-  criarEntrevista, 
-  atualizarEntrevista, 
-  excluirEntrevista, 
+  listarEntrevistasDoUsuario, 
+  obterEntrevistaPorId,
+  criarEntrevista,
+  atualizarEntrevista,
+  excluirEntrevista,
   adicionarPergunta,
   salvarResposta,
   adicionarFeedback
@@ -33,7 +33,7 @@ export const useEntrevistas = () => {
     setErro(null);
 
     try {
-      const entrevistasDoUsuario = await obterEntrevistasDoUsuario(session.user.id);
+      const entrevistasDoUsuario = await listarEntrevistasDoUsuario(session.user.id);
       setEntrevistas(entrevistasDoUsuario);
     } catch (error) {
       console.error('Erro ao carregar entrevistas:', error);
@@ -51,7 +51,7 @@ export const useEntrevistas = () => {
     setErro(null);
 
     try {
-      const entrevistaDetalhada = await obterEntrevista(entrevistaId);
+      const entrevistaDetalhada = await obterEntrevistaPorId(entrevistaId);
       
       if (!entrevistaDetalhada) {
         setErro('Entrevista não encontrada');
@@ -129,8 +129,7 @@ export const useEntrevistas = () => {
         await registrarConclusaoEntrevista(
           session.user.id, 
           entrevistaId, 
-          entrevistaAtual?.titulo || 'Entrevista',
-          dados.pontuacaoGeral
+          entrevistaAtual?.titulo || 'Entrevista'
         );
       }
       
@@ -210,13 +209,13 @@ export const useEntrevistas = () => {
     setErro(null);
 
     try {
-      await salvarResposta(perguntaId, resposta);
-      
+      await salvarResposta(entrevistaId, perguntaId, resposta);
+
       // Recarregar a entrevista para atualizar os dados
       if (entrevistaAtual) {
         await obterEntrevistaDetalhada(entrevistaId);
       }
-      
+
       return true;
     } catch (error) {
       console.error('Erro ao salvar resposta:', error);
@@ -238,30 +237,22 @@ export const useEntrevistas = () => {
     setErro(null);
 
     try {
-      // Encontrar a pergunta no estado atual
-      const pergunta = entrevistaAtual?.perguntas?.find(p => p.id === perguntaId);
-      
-      if (!pergunta || !pergunta.resposta) {
-        setErro('É necessário fornecer uma resposta antes de solicitar feedback.');
-        return false;
-      }
-      
       // Aqui seria implementada a chamada para a API de IA para gerar o feedback
-      // Por enquanto, vamos simular um feedback genérico
+      // Por enquanto, vamos simular um feedback gerado
       const feedbackGerado = "Sua resposta está clara e bem estruturada. Você abordou os pontos principais da questão, mas poderia fornecer mais exemplos específicos para ilustrar sua experiência.";
       const pontuacao = Math.floor(Math.random() * 4) + 7; // Pontuação aleatória entre 7 e 10
-      
+
       // Salvar o feedback gerado
-      await adicionarFeedback(perguntaId, feedbackGerado, pontuacao);
-      
+      await adicionarFeedback(entrevistaId, perguntaId, feedbackGerado, pontuacao);
+
       // Registrar a atividade
       await registrarSolicitacaoFeedback(session.user.id, entrevistaId, perguntaId);
       
       // Recarregar a entrevista para atualizar os dados
-      if (entrevistaAtual) {
+      if (entrevistaAtual) { 
         await obterEntrevistaDetalhada(entrevistaId);
       }
-      
+
       return true;
     } catch (error) {
       console.error('Erro ao gerar feedback:', error);

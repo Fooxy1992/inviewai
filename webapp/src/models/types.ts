@@ -67,6 +67,8 @@ export enum TipoPergunta {
   COMPORTAMENTAL = 'COMPORTAMENTAL',
   TECNICA = 'TECNICA',
   GERAL = 'GERAL',
+  MULTIPLA_ESCOLHA = 'MULTIPLA_ESCOLHA',
+  ABERTA = 'ABERTA',
 }
 
 // Modelo para histórico de atividades

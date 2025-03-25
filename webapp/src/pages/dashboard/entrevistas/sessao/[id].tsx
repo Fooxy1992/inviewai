@@ -32,6 +32,7 @@ import { FaArrowLeft, FaMicrophone, FaMicrophoneSlash, FaSave, FaThumbsUp, FaThu
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useEntrevistas } from '@/hooks/useEntrevistas';
 import { TipoPergunta, StatusEntrevista } from '@/models/types';
+import { Timestamp } from 'firebase/firestore';
 
 const EntrevistaSessaoPage = () => {
   const router = useRouter();
@@ -58,7 +59,7 @@ const EntrevistaSessaoPage = () => {
   
   // Estado para gravação de áudio
   const [gravando, setGravando] = useState(false);
-  const [reconhecimentoVoz, setReconhecimentoVoz] = useState<SpeechRecognition | null>(null);
+  const [reconhecimentoVoz, setReconhecimentoVoz] = useState<any>(null);
   
   // Modal de confirmação para finalizar entrevista
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -90,40 +91,42 @@ const EntrevistaSessaoPage = () => {
   
   // Configurar reconhecimento de voz
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
-      
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'pt-BR';
-      
-      recognition.onresult = (event) => {
-        let transcript = '';
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          if (event.results[i].isFinal) {
-            transcript += event.results[i][0].transcript + ' ';
-          }
-        }
+    if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+      const SpeechRecognitionAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRecognitionAPI) {
+        const recognition = new SpeechRecognitionAPI();
         
-        if (transcript) {
-          setResposta(prev => prev + transcript);
-        }
-      };
-      
-      recognition.onerror = (event) => {
-        console.error('Erro no reconhecimento de voz:', event.error);
-        setGravando(false);
-        toast({
-          title: 'Erro no reconhecimento de voz',
-          description: `Erro: ${event.error}`,
-          status: 'error',
-          duration: 3000,
-          isClosable: true
-        });
-      };
-      
-      setReconhecimentoVoz(recognition);
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'pt-BR';
+        
+        recognition.onresult = (event: any) => {
+          let transcript = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            if (event.results[i].isFinal) {
+              transcript += event.results[i][0].transcript + ' ';
+            }
+          }
+          
+          if (transcript) {
+            setResposta(prev => prev + transcript);
+          }
+        };
+        
+        recognition.onerror = (event: any) => {
+          console.error('Erro no reconhecimento de voz:', event.error);
+          setGravando(false);
+          toast({
+            title: 'Erro no reconhecimento de voz',
+            description: `Erro: ${event.error}`,
+            status: 'error',
+            duration: 3000,
+            isClosable: true
+          });
+        };
+        
+        setReconhecimentoVoz(recognition);
+      }
     }
     
     return () => {
@@ -278,10 +281,10 @@ const EntrevistaSessaoPage = () => {
       setPerguntaAtual(prev => prev + 1);
       setResposta(''); // Limpar campo de resposta
       
-      // Verificar se a próxima pergunta já tem resposta
+      // Se a próxima pergunta já tiver uma resposta, pré-carregá-la
       const proximaPerguntaIndex = perguntaAtual + 1;
-      if (entrevistaAtual.perguntas[proximaPerguntaIndex].resposta) {
-        setResposta(entrevistaAtual.perguntas[proximaPerguntaIndex].resposta || '');
+      if (entrevistaAtual.perguntas[proximaPerguntaIndex]?.resposta) {
+        setResposta(entrevistaAtual.perguntas[proximaPerguntaIndex]?.resposta?.texto || '');
       }
     }
   };
@@ -293,13 +296,13 @@ const EntrevistaSessaoPage = () => {
       await handleSalvarResposta();
     }
     
-    if (perguntaAtual > 0) {
+    if (entrevistaAtual && entrevistaAtual.perguntas && perguntaAtual > 0) {
       setPerguntaAtual(prev => prev - 1);
       
-      // Carregar resposta da pergunta anterior
-      if (entrevistaAtual && entrevistaAtual.perguntas) {
-        const perguntaAnteriorIndex = perguntaAtual - 1;
-        setResposta(entrevistaAtual.perguntas[perguntaAnteriorIndex].resposta || '');
+      // Se a pergunta anterior já tiver uma resposta, pré-carregá-la
+      const perguntaAnteriorIndex = perguntaAtual - 1;
+      if (entrevistaAtual.perguntas[perguntaAnteriorIndex]?.resposta) {
+        setResposta(entrevistaAtual.perguntas[perguntaAnteriorIndex]?.resposta?.texto || '');
       }
     }
   };
@@ -346,7 +349,7 @@ const EntrevistaSessaoPage = () => {
   // Atualizar resposta quando a pergunta atual mudar
   useEffect(() => {
     if (entrevistaAtual && entrevistaAtual.perguntas && entrevistaAtual.perguntas[perguntaAtual]) {
-      setResposta(entrevistaAtual.perguntas[perguntaAtual].resposta || '');
+      setResposta(entrevistaAtual.perguntas[perguntaAtual].resposta?.texto || '');
     }
   }, [perguntaAtual, entrevistaAtual]);
   
@@ -478,11 +481,11 @@ const EntrevistaSessaoPage = () => {
             <VStack align="start" spacing={4}>
               <HStack width="100%" justifyContent="space-between">
                 <Badge colorScheme={
-                  perguntaCorrente.tipoPergunta === TipoPergunta.COMPORTAMENTAL ? 'teal' : 
-                  perguntaCorrente.tipoPergunta === TipoPergunta.TECNICA ? 'cyan' : 
-                  perguntaCorrente.tipoPergunta === TipoPergunta.MULTIPLA_ESCOLHA ? 'purple' : 'blue'
+                  perguntaCorrente.tipo === TipoPergunta.COMPORTAMENTAL ? 'teal' : 
+                  perguntaCorrente.tipo === TipoPergunta.TECNICA ? 'cyan' : 
+                  perguntaCorrente.tipo === TipoPergunta.MULTIPLA_ESCOLHA ? 'purple' : 'blue'
                 }>
-                  {perguntaCorrente.tipoPergunta}
+                  {perguntaCorrente.tipo}
                 </Badge>
               </HStack>
               
@@ -541,21 +544,21 @@ const EntrevistaSessaoPage = () => {
             <Card borderColor="green.200" borderWidth="1px" mb={4}>
               <CardBody>
                 <Text fontWeight="medium" mb={2}>Feedback da IA:</Text>
-                <Text mb={4}>{perguntaCorrente.feedback}</Text>
+                <Text mb={4}>{perguntaCorrente.feedback.texto}</Text>
                 
-                {perguntaCorrente.pontuacao !== undefined && (
+                {perguntaCorrente.feedback.pontuacao !== undefined && (
                   <HStack justifyContent="flex-end">
                     <Badge 
                       colorScheme={
-                        perguntaCorrente.pontuacao >= 7 ? 'green' : 
-                        perguntaCorrente.pontuacao >= 4 ? 'yellow' : 'red'
+                        perguntaCorrente.feedback.pontuacao >= 7 ? 'green' : 
+                        perguntaCorrente.feedback.pontuacao >= 4 ? 'yellow' : 'red'
                       }
                       px={2}
                       py={1}
                       borderRadius="full"
                       fontSize="0.9em"
                     >
-                      {perguntaCorrente.pontuacao}/10
+                      {perguntaCorrente.feedback.pontuacao}/10
                     </Badge>
                   </HStack>
                 )}

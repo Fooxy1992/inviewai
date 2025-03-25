@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
+import { Timestamp } from 'firebase/firestore';
 import {
   Box,
   Button,
@@ -24,7 +25,8 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
-  Badge
+  Badge,
+  Icon
 } from '@chakra-ui/react';
 import { FiMic, FiMessageSquare, FiArrowLeft, FiArrowRight, FiCheck, FiFileText } from 'react-icons/fi';
 
@@ -78,15 +80,16 @@ const ResponderEntrevistaPage = () => {
     if (entrevistaAtual && entrevistaAtual.status === StatusEntrevista.PENDENTE) {
       atualizarDadosEntrevista(entrevistaId, {
         status: StatusEntrevista.EM_ANDAMENTO,
-        dataInicio: new Date()
+        dataInicio: Timestamp.fromDate(new Date())
       });
     }
   }, [entrevistaAtual]);
 
   // Verificar se resposta já existe para a pergunta atual
   useEffect(() => {
-    if (entrevistaAtual?.perguntas && entrevistaAtual.perguntas[perguntaAtual]?.resposta?.texto) {
-      setResposta(entrevistaAtual.perguntas[perguntaAtual].resposta.texto);
+    const textoResposta = entrevistaAtual?.perguntas?.[perguntaAtual]?.resposta?.texto;
+    if (textoResposta) {
+      setResposta(textoResposta);
     } else {
       setResposta('');
     }
@@ -198,7 +201,7 @@ const ResponderEntrevistaPage = () => {
     try {
       await atualizarDadosEntrevista(entrevistaId, {
         status: StatusEntrevista.CONCLUIDA,
-        dataConclusao: new Date()
+        dataConclusao: Timestamp.fromDate(new Date())
       });
       
       toast({
@@ -231,7 +234,9 @@ const ResponderEntrevistaPage = () => {
     const tipos = {
       [TipoPergunta.COMPORTAMENTAL]: { label: 'Comportamental', color: 'purple' },
       [TipoPergunta.TECNICA]: { label: 'Técnica', color: 'green' },
-      [TipoPergunta.GERAL]: { label: 'Geral', color: 'blue' }
+      [TipoPergunta.GERAL]: { label: 'Geral', color: 'blue' },
+      [TipoPergunta.MULTIPLA_ESCOLHA]: { label: 'Múltipla Escolha', color: 'orange' },
+      [TipoPergunta.ABERTA]: { label: 'Aberta', color: 'teal' }
     };
     return tipos[tipo] || { label: tipo, color: 'gray' };
   };
@@ -399,10 +404,10 @@ const ResponderEntrevistaPage = () => {
               <Icon as={FiFileText} mr={2} color="green.500" />
               <Heading size="sm">Feedback</Heading>
             </Flex>
-            <Text>{entrevistaAtual.perguntas[perguntaAtual].feedback.texto}</Text>
-            {entrevistaAtual.perguntas[perguntaAtual].feedback.pontuacao && (
+            <Text>{entrevistaAtual?.perguntas?.[perguntaAtual]?.feedback?.texto}</Text>
+            {entrevistaAtual?.perguntas?.[perguntaAtual]?.feedback?.pontuacao && (
               <Text mt={2} fontWeight="bold">
-                Pontuação: {entrevistaAtual.perguntas[perguntaAtual].feedback.pontuacao}/10
+                Pontuação: {entrevistaAtual?.perguntas?.[perguntaAtual]?.feedback?.pontuacao}/10
               </Text>
             )}
           </Box>

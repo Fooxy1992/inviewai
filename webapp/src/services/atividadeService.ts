@@ -56,7 +56,7 @@ export async function registrarCriacaoEntrevista(
 ): Promise<string> {
   return registrarAtividade(
     userId,
-    TipoAtividade.ENTREVISTA_CRIADA,
+    TipoAtividade.CRIACAO_ENTREVISTA,
     { entrevistaId, titulo }
   );
 }
@@ -71,7 +71,7 @@ export async function registrarInicioEntrevista(
 ): Promise<string> {
   return registrarAtividade(
     userId,
-    TipoAtividade.ENTREVISTA_INICIADA,
+    TipoAtividade.INICIO_ENTREVISTA,
     { entrevistaId, titulo }
   );
 }
@@ -87,7 +87,7 @@ export async function registrarConclusaoEntrevista(
 ): Promise<string> {
   return registrarAtividade(
     userId,
-    TipoAtividade.ENTREVISTA_CONCLUIDA,
+    TipoAtividade.CONCLUSAO_ENTREVISTA,
     { entrevistaId, titulo, pontuacao }
   );
 }
@@ -102,7 +102,7 @@ export async function registrarSolicitacaoFeedback(
 ): Promise<string> {
   return registrarAtividade(
     userId,
-    TipoAtividade.FEEDBACK_SOLICITADO,
+    TipoAtividade.SOLICITACAO_FEEDBACK,
     { entrevistaId, perguntaId }
   );
 }

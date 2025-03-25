@@ -73,7 +73,7 @@ const EntrevistaDetalhesPage = () => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [novaPergunta, setNovaPergunta] = useState({
     texto: '',
-    tipoPergunta: TipoPergunta.COMPORTAMENTAL
+    tipo: TipoPergunta.COMPORTAMENTAL
   });
   const [adicionandoPergunta, setAdicionandoPergunta] = useState(false);
   
@@ -181,7 +181,7 @@ const EntrevistaDetalhesPage = () => {
       await adicionarNovaPergunta(
         id,
         novaPergunta.texto,
-        novaPergunta.tipoPergunta as TipoPergunta
+        novaPergunta.tipo as TipoPergunta
       );
       
       toast({
@@ -195,7 +195,7 @@ const EntrevistaDetalhesPage = () => {
       // Resetar formulário e fechar modal
       setNovaPergunta({
         texto: '',
-        tipoPergunta: TipoPergunta.COMPORTAMENTAL
+        tipo: TipoPergunta.COMPORTAMENTAL
       });
       onClose();
       
@@ -318,7 +318,7 @@ const EntrevistaDetalhesPage = () => {
     case StatusEntrevista.CONCLUIDA:
       statusColor = 'green';
       break;
-    case StatusEntrevista.ARQUIVADA:
+    case StatusEntrevista.CANCELADA:
       statusColor = 'purple';
       break;
   }
@@ -334,9 +334,6 @@ const EntrevistaDetalhesPage = () => {
       break;
     case TipoEntrevista.MISTA:
       tipoColor = 'purple';
-      break;
-    case TipoEntrevista.CASE:
-      tipoColor = 'pink';
       break;
   }
 
@@ -386,7 +383,6 @@ const EntrevistaDetalhesPage = () => {
                     <option value={TipoEntrevista.COMPORTAMENTAL}>Comportamental</option>
                     <option value={TipoEntrevista.TECNICA}>Técnica</option>
                     <option value={TipoEntrevista.MISTA}>Mista</option>
-                    <option value={TipoEntrevista.CASE}>Case</option>
                   </Select>
                 </FormControl>
                 
@@ -400,7 +396,7 @@ const EntrevistaDetalhesPage = () => {
                     <option value={StatusEntrevista.PENDENTE}>Pendente</option>
                     <option value={StatusEntrevista.EM_ANDAMENTO}>Em Andamento</option>
                     <option value={StatusEntrevista.CONCLUIDA}>Concluída</option>
-                    <option value={StatusEntrevista.ARQUIVADA}>Arquivada</option>
+                    <option value={StatusEntrevista.CANCELADA}>Cancelada</option>
                   </Select>
                 </FormControl>
                 
@@ -459,7 +455,7 @@ const EntrevistaDetalhesPage = () => {
                   rightIcon={<FaPlay />}
                   colorScheme="brand"
                   onClick={iniciarEntrevista}
-                  isDisabled={entrevistaAtual.status === StatusEntrevista.ARQUIVADA}
+                  isDisabled={entrevistaAtual.status === StatusEntrevista.CANCELADA}
                 >
                   {entrevistaAtual.status === StatusEntrevista.PENDENTE ? 'Iniciar' : 'Continuar'}
                 </Button>
@@ -506,8 +502,8 @@ const EntrevistaDetalhesPage = () => {
                     <VStack align="flex-start" spacing={2}>
                       <HStack>
                         <Text fontWeight="bold">#{index + 1}</Text>
-                        <Badge colorScheme={pergunta.tipoPergunta === TipoPergunta.COMPORTAMENTAL ? 'teal' : 'cyan'}>
-                          {pergunta.tipoPergunta}
+                        <Badge colorScheme={pergunta.tipo === TipoPergunta.COMPORTAMENTAL ? 'teal' : 'cyan'}>
+                          {pergunta.tipo}
                         </Badge>
                       </HStack>
                       <Text>{pergunta.texto}</Text>
@@ -555,7 +551,7 @@ const EntrevistaDetalhesPage = () => {
                     <>
                       <Divider my={3} />
                       <Text fontSize="sm" fontWeight="medium" mb={1}>Resposta:</Text>
-                      <Text fontSize="sm" color="gray.600">{pergunta.resposta}</Text>
+                      <Text fontSize="sm" color="gray.600">{pergunta.resposta.texto}</Text>
                     </>
                   )}
                   
@@ -563,10 +559,10 @@ const EntrevistaDetalhesPage = () => {
                     <>
                       <Divider my={3} />
                       <Text fontSize="sm" fontWeight="medium" mb={1}>Feedback:</Text>
-                      <Text fontSize="sm" color="gray.600">{pergunta.feedback}</Text>
-                      {pergunta.pontuacao !== undefined && (
-                        <Badge colorScheme={pergunta.pontuacao >= 7 ? 'green' : pergunta.pontuacao >= 4 ? 'yellow' : 'red'} mt={2}>
-                          Pontuação: {pergunta.pontuacao}/10
+                      <Text fontSize="sm" color="gray.600">{pergunta.feedback.texto}</Text>
+                      {pergunta.feedback.pontuacao !== undefined && (
+                        <Badge colorScheme={pergunta.feedback.pontuacao >= 7 ? 'green' : pergunta.feedback.pontuacao >= 4 ? 'yellow' : 'red'} mt={2}>
+                          Pontuação: {pergunta.feedback.pontuacao}/10
                         </Badge>
                       )}
                     </>
@@ -608,8 +604,8 @@ const EntrevistaDetalhesPage = () => {
                   <FormControl>
                     <FormLabel>Tipo de Pergunta</FormLabel>
                     <Select
-                      name="tipoPergunta"
-                      value={novaPergunta.tipoPergunta}
+                      name="tipo"
+                      value={novaPergunta.tipo}
                       onChange={handlePerguntaInputChange}
                     >
                       <option value={TipoPergunta.COMPORTAMENTAL}>Comportamental</option>
